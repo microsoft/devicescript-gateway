@@ -1,0 +1,243 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namePrefix": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 11,
+            "metadata": {
+                "description": "Name prefix for created resources."
+            }
+        },
+        "adminUserId": {
+            "type": "string",
+            "metadata": {
+                "description": "User id owning the key vault (use `az ad signed-in-user show`)."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "minLength": 32,
+            "maxLength": 256,
+            "metadata": {
+                "description": "Password for the administrator user (use `openssl rand -base64 32`)."
+            }
+        }
+    },
+    "functions": [],
+    "variables": {
+        "prefix": "[toLower(parameters('namePrefix'))]",
+        "blobServicesName": "default",
+        "containerName": "container",
+        "location": "[resourceGroup().location]",
+        "serverfarmsApiVersion": "2015-08-01",
+        "storageApiVersion": "2022-09-01",
+        "appInsightsApiVersion": "2020-02-02",
+        "webAppApiVersion": "2022-03-01",
+        "keyVaultApiVersion": "2022-07-01",
+        "tenantId": "[subscription().tenantId]",
+        "hostingPlanName": "[concat(variables('prefix'), 'hosting')]",
+        "webAppName": "[concat(variables('prefix'), 'webapp')]",
+        "appInsightsName": "[concat(variables('prefix'), 'appinsights')]",
+        "storageAccountName": "[concat(variables('prefix'), 'storage')]",
+        "keyVaultName": "[concat(variables('prefix'), 'keys')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "keyVaultId": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+        "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "blobServicesId": "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), variables('blobServicesName'))]",
+        "appInsightsId": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+        "webAppId": "[resourceId('Microsoft.Web/sites', variables('webAppName'))]",
+        "storageConnectionStringSecretName": "storageAccountConnectionString",
+        "adminToken": "[concat('admin:', parameters('adminPassword'))]",
+        "passwordsSecretName": "passwords"
+    },
+    "resources": [
+        // storage
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('storageApiVersion')]",
+            "name": "[variables('storageAccountName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [],
+            "sku": {
+                "name": "Standard_RAGRS"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "serverFarmId": "[variables('serverFarmId')]",
+                "supportsHttpsTrafficOnly": true,
+                "isHnsEnabled": true
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "[variables('storageApiVersion')]",
+            "name": "[concat(variables('storageAccountName'), '/', variables('blobServicesName'))]",
+            "dependsOn": ["[variables('storageAccountId')]"],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "[variables('storageApiVersion')]",
+            "name": "[concat(variables('storageAccountName'), '/', variables('blobServicesName'), '/', variables('containerName'))]",
+            "dependsOn": ["[variables('blobServicesId')]"],
+            "properties": {
+                "publicAccess": "Blob"
+            }
+        },
+        // app insights
+        {
+            "type": "Microsoft.Insights/components",
+            "apiVersion": "[variables('appInsightsApiVersion')]",
+            "name": "[variables('appInsightsName')]",
+            "location": "[variables('location')]",
+            "kind": "web",
+            "properties": {
+                "applicationId": "[variables('webAppName')]",
+                "application_Type": "web"
+            }
+        },
+        // keys
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[variables('keyVaultName')]",
+            "location": "[variables('location')]",
+            "dependsOn": ["[variables('webAppId')]"],
+            "properties": {
+                "enableSoftDelete": false,
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": false,
+                "enableRbacAuthorization": false,
+                "tenantId": "[variables('tenantId')]",
+                "accessPolicies": [
+                    {
+                        // current user has full rights
+                        "tenantId": "[variables('tenantId')]",
+                        "objectId": "[parameters('adminUserId')]",
+                        "permissions": {
+                            "secrets": ["all"]
+                        }
+                    },
+                    {
+                        // web site can read
+                        "tenantId": "[variables('tenantId')]",
+                        "objectId": "[reference(variables('webAppId'), variables('webAppApiVersion'), 'Full').identity.principalId]",
+                        "permissions": {
+                            "secrets": ["get"]
+                        }
+                    }
+                ],
+                "sku": {
+                    "name": "Standard",
+                    "family": "A"
+                },
+                "networkAcls": {
+                    "defaultAction": "Allow",
+                    "bypass": "AzureServices"
+                }
+            }
+        },
+        // secrets
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[concat(variables('keyVaultName'), '/', variables('passwordsSecretName'))]",
+            "dependsOn": [
+                "[variables('keyVaultId')]",
+                "[variables('storageAccountId')]"
+            ],
+            "properties": {
+                "value": "[variables('adminToken')]"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[concat(variables('keyVaultName'), '/', variables('storageConnectionStringSecretName'))]",
+            "dependsOn": [
+                "[variables('keyVaultId')]",
+                "[variables('storageAccountId')]"
+            ],
+            "properties": {
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), variables('storageApiVersion')).keys[0].value,';EndpointSuffix=core.windows.net')]"
+            }
+        },
+        // web
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "[variables('serverfarmsApiVersion')]",
+            "name": "[variables('hostingPlanName')]",
+            "location": "[variables('location')]",
+            "tags": {
+                "displayName": "HostingPlan"
+            },
+            "kind": "app",
+            "sku": {
+                "name": "F1",
+                "capacity": 1
+            },
+            "properties": {
+                "reserved": true,
+                "name": "[variables('hostingPlanName')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('webAppApiVersion')]",
+            "name": "[variables('webAppName')]",
+            "location": "[variables('location')]",
+            "tags": {
+                "displayName": "[variables('webAppName')]"
+            },
+            "kind": "app",
+            "dependsOn": [
+                "[variables('serverFarmId')]",
+                "[variables('appInsightsId')]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "name": "[variables('webAppName')]",
+                "httpsOnly": true,
+                "serverFarmId": "[variables('serverFarmId')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(variables('appInsightsName'), variables('appInsightsApiVersion')).InstrumentationKey]"
+                        },
+                        {
+                            "name": "KEY_VAULT_NAME",
+                            "value": "[variables('keyVaultName')]"
+                        },
+                        {
+                            "name": "STORAGE_CONNECTION_STRING_SECRET",
+                            "value": "[variables('storageConnectionStringSecretName')]"
+                        },
+                        {
+                            "name": "PASSWORDS_SECRET",
+                            "value": "[variables('passwordsSecretName')]"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "admin-token": {
+            "type": "securestring",
+            "value": "[variables('adminToken')]"
+        }
+    }
+}

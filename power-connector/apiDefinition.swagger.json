@@ -1,0 +1,1302 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "jacdac5",
+    "description": "Interact with Jacdac IoT devices",
+    "version": "1.0",
+    "contact": {
+      "name": "Jacdac team",
+      "url": "https://aka.ms/jacdac",
+      "email": "jacdac@microsoft.com"
+    }
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "https"
+  ],
+  "host": "jacdac-cloud-0.azurewebsites.net",
+  "basePath": "/api",
+  "paths": {
+    "/devices": {
+      "get": {
+        "operationId": "Devices",
+        "summary": "List devices",
+        "description": "Returns a list of available devices, connected or not",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Available devices",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Device"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateDevice",
+        "summary": "Create device",
+        "description": "Can be also used to get the deployment key",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "x-ms-summary": "Device ID"
+                },
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "User-assigned name of device"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "scriptId": {
+                  "type": "string",
+                  "x-ms-summary": "Script ID",
+                  "description": "Reverse timestamp plus random letters",
+                  "example": "8333876049kJJpBGuRmXEd"
+                },
+                "scriptVersion": {
+                  "type": "number",
+                  "x-ms-summary": "Script Version",
+                  "description": "Numeric version number",
+                  "example": 42
+                }
+              },
+              "required": [
+                "deviceId"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available devices",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "x-ms-summary": "Device ID"
+                },
+                "connectionString": {
+                  "type": "string",
+                  "x-ms-summary": "IOT Hub Connection String"
+                }
+              },
+              "required": [
+                "deviceId",
+                "connectionString"
+              ]
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/telemetry": {
+      "get": {
+        "operationId": "Telemetry",
+        "summary": "Get telemetry from all devices",
+        "description": "Get telemetry from all devices",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Start Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "stop",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Stop Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Return First",
+            "description": "Max. number of elements to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telemetry entries",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Telemetry"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/telemetry/{service}": {
+      "get": {
+        "operationId": "ServiceTelemetry",
+        "summary": "Get telemetry from all devices for a given service (sensor type)",
+        "description": "Get telemetry from all devices for a given service (sensor type)",
+        "parameters": [
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Service Name",
+            "description": "Type of sensor (eg. 'temperature')"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Start Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "stop",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Stop Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Return First",
+            "description": "Max. number of elements to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telemetry entries",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Telemetry"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/{deviceId}": {
+      "get": {
+        "operationId": "GetDevice",
+        "summary": "Get Device",
+        "description": "Get properties of a single device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device description",
+            "schema": {
+              "$ref": "#/definitions/Device"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "patch": {
+        "operationId": "UpdateDevice",
+        "summary": "Update properties of a device",
+        "description": "Update properties of a device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "User-assigned name of device"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "scriptId": {
+                  "type": "string",
+                  "x-ms-summary": "Script ID",
+                  "description": "Reverse timestamp plus random letters",
+                  "example": "8333876049kJJpBGuRmXEd"
+                },
+                "scriptVersion": {
+                  "type": "number",
+                  "x-ms-summary": "Script Version",
+                  "description": "Numeric version number",
+                  "example": 42
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device description",
+            "schema": {
+              "$ref": "#/definitions/Device"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "delete": {
+        "operationId": "DeleteDevice",
+        "summary": "Delete Device",
+        "description": "Remove device from Hub and delete its metadata",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "default",
+            "schema": {}
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/{deviceId}/fwd": {
+      "get": {
+        "operationId": "DeviceFwdSocket",
+        "summary": "Get Forwarding Socket for Device",
+        "description": "Get a connection for direct talk with the Jacdac bus connected to the device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection info",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "x-ms-summary": "wss://... URL"
+                },
+                "protocol": {
+                  "type": "string",
+                  "x-ms-summary": "Pass as argument to new WebSocket()"
+                },
+                "expires": {
+                  "type": "number",
+                  "x-ms-summary": "JS timestamp"
+                }
+              },
+              "required": [
+                "url",
+                "protocol",
+                "expires"
+              ]
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/{deviceId}/method": {
+      "post": {
+        "operationId": "Call",
+        "summary": "Call Method",
+        "description": "Invoke method on a remote device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "x-ms-summary": "Method name",
+                  "description": "Must match the value on device"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "x-ms-summary": "Argument to method",
+                    "description": "Argument will be available on the device side"
+                  }
+                }
+              },
+              "required": [
+                "method"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "default",
+            "schema": {}
+          }
+        }
+      }
+    },
+    "/devices/{deviceId}/telemetry": {
+      "get": {
+        "operationId": "DeviceTelemetry",
+        "summary": "Get telemetry from a given device",
+        "description": "Get telemetry from a given device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Start Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "stop",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Stop Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Return First",
+            "description": "Max. number of elements to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telemetry entries",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Telemetry"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/devices/{deviceId}/telemetry/{sensorId}/{service}/{srvIdx}": {
+      "get": {
+        "operationId": "SensorTelemetry",
+        "summary": "Get telemetry from a given sensor on a given device",
+        "description": "Get telemetry from a given sensor on a given device",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Device ID",
+            "description": "Something like ZX12_9ab02928adf3912aa",
+            "x-ms-dynamic-values": {
+              "operationId": "Devices",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "sensorId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Sensor ID",
+            "description": "Unique identifier of the sensor"
+          },
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Service Name",
+            "description": "Type of sensor (eg. 'temperature')"
+          },
+          {
+            "name": "srvIdx",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Service Index",
+            "description": "Typically 0; used when there is more than one instance of service in the sensor"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Start Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "stop",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Stop Time",
+            "description": "Milliseconds since epoch"
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Return First",
+            "description": "Max. number of elements to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telemetry entries",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Telemetry"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/hooks": {
+      "get": {
+        "operationId": "Hooks",
+        "summary": "List active hooks",
+        "description": "List active hooks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Active hooks",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "x-ms-summary": "Hook ID"
+                  },
+                  "url": {
+                    "type": "string",
+                    "x-ms-summary": "User-side URL to be called"
+                  },
+                  "deviceId": {
+                    "type": "string",
+                    "x-ms-summary": "Device ID or _"
+                  },
+                  "method": {
+                    "type": "string",
+                    "x-ms-summary": "Method name or _"
+                  }
+                },
+                "required": [
+                  "id",
+                  "url",
+                  "deviceId",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "post": {
+        "operationId": "Message",
+        "summary": "When a device sends a message",
+        "description": "Runs when a message is sent from the device to the cloud",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "x-ms-summary": "Device ID",
+                  "description": "Something like ZX12_9ab02928adf3912aa",
+                  "x-ms-dynamic-values": {
+                    "operationId": "Devices",
+                    "value-path": "id",
+                    "value-title": "displayName"
+                  }
+                },
+                "method": {
+                  "type": "string",
+                  "x-ms-summary": "Method name",
+                  "description": "Must match the value on device"
+                },
+                "url": {
+                  "type": "string",
+                  "x-ms-summary": "Webhook URL",
+                  "description": "URL that gets called when the event occurs",
+                  "x-ms-notification-url": true,
+                  "x-ms-visibility": "internal"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {}
+          }
+        },
+        "x-ms-trigger": "single"
+      },
+      "x-ms-notification-content": {
+        "description": "Details for event",
+        "schema": {
+          "$ref": "#/definitions/EventSchema"
+        }
+      }
+    },
+    "/hooks/{hookId}": {
+      "delete": {
+        "operationId": "DeleteTrigger",
+        "summary": "Delete a webhook",
+        "description": "Delete a webhook",
+        "parameters": [
+          {
+            "name": "hookId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Hook ID",
+            "description": "ID of the hook being deleted"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "default",
+            "schema": {}
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts": {
+      "get": {
+        "operationId": "ListScripts",
+        "summary": "List script headers",
+        "description": "List script headers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Scripts in account",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "headers": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Script"
+                  }
+                }
+              },
+              "required": [
+                "headers"
+              ]
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "post": {
+        "operationId": "CreateScript",
+        "summary": "Create a new script",
+        "description": "Create a new script",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "User-assigned name of script",
+                  "example": "my thermostat"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "body": {
+                  "$ref": "#/definitions/ScriptBody"
+                }
+              },
+              "required": [
+                "name",
+                "meta",
+                "body"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Script Header",
+            "schema": {
+              "$ref": "#/definitions/Script"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts/{scriptId}": {
+      "get": {
+        "operationId": "GetScripts",
+        "summary": "Get one script header",
+        "description": "Get one script header",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Script Header",
+            "schema": {
+              "$ref": "#/definitions/Script"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "patch": {
+        "operationId": "UpdateScript",
+        "summary": "Set script header properties or body",
+        "description": "Set script header properties or body",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "User-assigned name of script",
+                  "example": "my thermostat"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "body": {
+                  "$ref": "#/definitions/ScriptBody"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Script Header",
+            "schema": {
+              "$ref": "#/definitions/Script"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "delete": {
+        "operationId": "DeleteScript",
+        "summary": "Remove script and all its bodies",
+        "description": "Remove script and all its bodies",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "default",
+            "schema": {}
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts/{scriptId}/body": {
+      "get": {
+        "operationId": "GetScriptBody",
+        "summary": "Get body of a script",
+        "description": "Get body of a script",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Script body",
+            "schema": {
+              "$ref": "#/definitions/ScriptBody"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      },
+      "put": {
+        "operationId": "SetScriptBody",
+        "summary": "Set body of a script",
+        "description": "Set body of a script",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ScriptBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Script Header",
+            "schema": {
+              "$ref": "#/definitions/Script"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts/{scriptId}/versions": {
+      "get": {
+        "operationId": "GetScriptVersions",
+        "summary": "Get headers of all versions of a script",
+        "description": "Get headers of all versions of a script",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions of the script",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Script"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts/{scriptId}/versions/{version}": {
+      "get": {
+        "operationId": "GetScriptVersion",
+        "summary": "Get header of one version of a script",
+        "description": "Get header of one version of a script",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Script Version",
+            "description": "Numeric version number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions of the script",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Script"
+              }
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/scripts/{scriptId}/versions/{version}/body": {
+      "get": {
+        "operationId": "GetScriptVersionBody",
+        "summary": "Get body of one version of a script",
+        "description": "Get body of one version of a script",
+        "parameters": [
+          {
+            "name": "scriptId",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "x-ms-summary": "Script ID",
+            "description": "Reverse timestamp plus random letters"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "x-ms-url-encoding": "single",
+            "type": "number",
+            "x-ms-summary": "Script Version",
+            "description": "Numeric version number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Body of version",
+            "schema": {
+              "$ref": "#/definitions/ScriptBody"
+            }
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    },
+    "/setup": {
+      "post": {
+        "operationId": "Setup",
+        "summary": "Setup storage account etc",
+        "description": "Setup storage account etc",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "default",
+            "schema": {}
+          }
+        },
+        "x-ms-visibility": "internal"
+      }
+    }
+  },
+  "definitions": {
+    "EventSchema": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "x-ms-summary": "Device ID",
+          "description": "Something like ZX12_9ab02928adf3912aa",
+          "x-ms-dynamic-values": {
+            "operationId": "Devices",
+            "value-path": "id",
+            "value-title": "displayName"
+          }
+        },
+        "method": {
+          "type": "string",
+          "x-ms-summary": "Method name",
+          "description": "Must match the value on device"
+        },
+        "payload": {
+          "type": "number",
+          "x-ms-summary": "Method argument",
+          "description": "The number passed from device along with the method name"
+        }
+      },
+      "required": [
+        "deviceId",
+        "method",
+        "payload"
+      ]
+    },
+    "Device": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "Device ID",
+          "description": "Unique identifier of the device"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "User-friendly Name"
+        },
+        "conn": {
+          "type": "boolean",
+          "x-ms-summary": "Connected",
+          "description": "Is device currently connected"
+        },
+        "lastAct": {
+          "type": "string",
+          "x-ms-summary": "Last Connected",
+          "description": "When was device last connected"
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "User-assigned name of device"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {}
+        },
+        "scriptId": {
+          "type": "string",
+          "x-ms-summary": "Script ID",
+          "description": "Reverse timestamp plus random letters",
+          "example": "8333876049kJJpBGuRmXEd"
+        },
+        "scriptVersion": {
+          "type": "number",
+          "x-ms-summary": "Script Version",
+          "description": "Numeric version number",
+          "example": 42
+        },
+        "deployedHash": {
+          "type": "string",
+          "x-ms-summary": "SHA256 Hash of Currently Deployed Script",
+          "description": "This property persists when the device is disconnected, so may not be up to date"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "conn",
+        "lastAct",
+        "name",
+        "meta",
+        "scriptId",
+        "scriptVersion",
+        "deployedHash"
+      ]
+    },
+    "Telemetry": {
+      "type": "object",
+      "properties": {
+        "brainId": {
+          "type": "string",
+          "x-ms-summary": "Brain ID",
+          "description": "Unique identifier of the network-connected device"
+        },
+        "sensorId": {
+          "type": "string",
+          "x-ms-summary": "Sensor ID",
+          "description": "Unique identifier of the sensor"
+        },
+        "srv": {
+          "type": "string",
+          "x-ms-summary": "Service Name",
+          "description": "Type of sensor (eg. 'temperature')"
+        },
+        "srvIdx": {
+          "type": "number",
+          "x-ms-summary": "Service Index",
+          "description": "Typically 0; used when there is more than one instance of service in the sensor"
+        },
+        "ms": {
+          "type": "number",
+          "x-ms-summary": "Timestamp",
+          "description": "Milliseconds since epoch",
+          "example": 1667258306330
+        },
+        "avg": {
+          "type": "number",
+          "x-ms-summary": "Sensor Reading",
+          "description": "Average of samples"
+        },
+        "min": {
+          "type": "number",
+          "x-ms-summary": "Minimum Reading",
+          "description": "Smallest of samples"
+        },
+        "max": {
+          "type": "number",
+          "x-ms-summary": "Maximum Reading",
+          "description": "Largest of samples"
+        },
+        "nsampl": {
+          "type": "number",
+          "x-ms-summary": "Number of Samples",
+          "description": "How many samples were taken"
+        },
+        "dur": {
+          "type": "number",
+          "x-ms-summary": "Sampling Duration",
+          "description": "Number of milliseconds in the sampling period ending at Timestamp"
+        }
+      },
+      "required": [
+        "brainId",
+        "sensorId",
+        "srv",
+        "srvIdx",
+        "ms",
+        "avg"
+      ]
+    },
+    "ScriptBody": {
+      "type": "object",
+      "properties": {
+        "blocks": {
+          "type": "string",
+          "x-ms-summary": "Blockly data"
+        },
+        "text": {
+          "type": "string",
+          "x-ms-summary": "Jacscript"
+        },
+        "compiled": {
+          "type": "string",
+          "x-ms-summary": "Hex-encoded"
+        }
+      },
+      "required": [
+        "blocks",
+        "text",
+        "compiled"
+      ]
+    },
+    "Script": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-ms-summary": "User-assigned name of script",
+          "example": "my thermostat"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {}
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "Script ID",
+          "description": "Reverse timestamp plus random letters",
+          "example": "8333876049kJJpBGuRmXEd"
+        },
+        "partition": {
+          "type": "string",
+          "x-ms-summary": "User or environment where the script belongs",
+          "example": "main"
+        },
+        "version": {
+          "type": "number",
+          "x-ms-summary": "Script Version",
+          "description": "Numeric version number",
+          "example": 42
+        },
+        "updated": {
+          "type": "number",
+          "x-ms-summary": "Update time",
+          "description": "Milliseconds since epoch",
+          "example": 1667258306330
+        }
+      },
+      "required": [
+        "name",
+        "meta",
+        "id",
+        "partition",
+        "version",
+        "updated"
+      ]
+    }
+  },
+  "tags": [],
+  "securityDefinitions": {
+    "basic_auth": {
+      "type": "basic"
+    }
+  },
+  "security": [
+    {
+      "basic_auth": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://aka.ms/jacdac"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://aka.ms/jacdac"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Internet of Things"
+    }
+  ]
+}

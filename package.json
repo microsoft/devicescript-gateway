@@ -1,0 +1,38 @@
+{
+  "name": "jacdac-cloud",
+  "version": "2.0.0",
+  "description": "",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "node dist/index.js",
+    "local": "node run.js",
+    "dev": "yarn build && yarn local",
+    "zip": "yarn build && rm -f pkg.zip && 7z a pkg.zip dist/ node_modules/ power-connector/ package.json -x!node_modules/typescript -x!node_modules/@types -xr!test",
+    "deploy": "yarn zip && az webapp deployment source config-zip --resource-group Jacdac-Cloud  --name jacdac-portal2 --src pkg.zip"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.2.0",
+    "@azure/identity": "^3.1.3",
+    "@azure/keyvault-secrets": "^4.6.0",
+    "@azure/storage-blob": "^12.11.0",
+    "@fastify/basic-auth": "^4.0.0",
+    "@fastify/cors": "^8.1.0",
+    "@fastify/static": "^6.5.0",
+    "@fastify/websocket": "^7.1.0",
+    "aedes": "^0.48.0",
+    "fastify": "^4.9.2",
+    "http-errors": "^2.0.0",
+    "node-fetch": "^2.6.7",
+    "openapi-types": "^12.1.0",
+    "pino-pretty": "^9.1.1",
+    "swagger-ui-dist": "^4.15.0"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^1.8.2",
+    "@types/node": "16.x",
+    "@types/ws": "^8.5.3",
+    "typescript": "^4.0.0"
+  }
+}
