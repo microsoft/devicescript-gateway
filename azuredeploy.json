@@ -36,6 +36,13 @@
         "appInsightsApiVersion": "2020-02-02",
         "webAppApiVersion": "2022-03-01",
         "keyVaultApiVersion": "2022-07-01",
+        "sku": "Free",
+        "skuCode": "F1",
+        "workerSize": "0",
+        "workerSizeId": "0",
+        "numberOfWorkers": "1",
+        "webAppAlwaysOn": false,
+        "webAppLinuxFxVersion": "NODE|lts",
         "tenantId": "[subscription().tenantId]",
         "hostingPlanName": "[concat(variables('prefix'), 'hosting')]",
         "webAppName": "[concat(variables('prefix'), 'webapp')]",
@@ -181,14 +188,17 @@
             "tags": {
                 "displayName": "HostingPlan"
             },
-            "kind": "app",
+            "kind": "linux",
             "sku": {
-                "name": "F1",
-                "capacity": 1
+                "Tier": "[variables('sku')]",
+                "Name": "[variables('skuCode')]"
             },
             "properties": {
                 "reserved": true,
-                "name": "[variables('hostingPlanName')]"
+                "name": "[variables('hostingPlanName')]",
+                "workerSize": "[variables('workerSize')]",
+                "workerSizeId": "[variables('workerSizeId')]",
+                "numberOfWorkers": "[variables('numberOfWorkers')]"
             }
         },
         {
@@ -199,7 +209,6 @@
             "tags": {
                 "displayName": "[variables('webAppName')]"
             },
-            "kind": "app",
             "dependsOn": [
                 "[variables('serverFarmId')]",
                 "[variables('appInsightsId')]"
@@ -211,7 +220,10 @@
                 "name": "[variables('webAppName')]",
                 "httpsOnly": true,
                 "serverFarmId": "[variables('serverFarmId')]",
+                "clientAffinityEnabled": false,
                 "siteConfig": {
+                    "linuxFxVersion": "[variables('webAppLinuxFxVersion')]",
+                    "alwaysOn": "[variables('webAppAlwaysOn')]",
                     "appSettings": [
                         {
                             "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
