@@ -18,6 +18,15 @@ echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 const resourceGroup = await question(chalk.blue("Pick a name for the resource group: "))
 if (!resourceGroup) throw "no resource group name given"
 
+const namePrefix = await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
+if (!namePrefix) throw "no name prefix given"
+
+const repo = await question(chalk.blue("Enter Github repository slug (owner/repo): "))
+if (!/^[^/]+\/[^/]+$/.test(repo))
+    throw "invalid Github repository slug format"
+
+const ghToken = process.env["GH_TOKEN"]
+
 // check if resource group already exists
 echo(`Searching for existing resource group ${resourceGroup}...`)
 const exists = JSON.parse((await $`az group list --query "[?name=='${resourceGroup}']"`).stdout)
@@ -30,18 +39,15 @@ if (exists?.length) {
 az group delete --yes --name $resourceGroup`
 }
 
-const namePrefix = await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
-if (!namePrefix) throw "no name prefix given"
-
 // check keyvaults already exist
-echo(`Looking for deleting keyvaults that might name clash...`)
+echo(chalk.blue(`Looking for deleting keyvaults that might name clash...`))
 const deletevaults = JSON.parse((await $`az keyvault list-deleted`).stdout)
 const deletedvault = deletevaults?.find(v => v.name === `${namePrefix.toLowerCase()}keys`)
 if (deletedvault)
     throw `delete keyvault ${deletedvault.name} already exists`
 
 // fetch current user azure id
-echo(`Resolving Azure sign in user information...`)
+echo(chalk.blue(`Resolving Azure sign in user information...`))
 const userInfo = JSON.parse((await $`az ad signed-in-user show`).stdout)
 const adminUserId = userInfo.id
 echo(chalk.blue(`Azure signin user: ${userInfo.displayName}, ${adminUserId}`))
@@ -87,7 +93,8 @@ az deployment group create \
   --parameters $parametersFile`).stdout)
 const did = dinfo
 const { outputs } = dinfo.properties
-const { webAppName, keyVaultName } = outputs
+const webAppName = outputs.webAppName.value
+const keyVaultName = outputs.keyVaultName.value
 
 echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 

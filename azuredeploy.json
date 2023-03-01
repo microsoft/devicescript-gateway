@@ -49,7 +49,7 @@
         "workerSizeId": "0",
         "numberOfWorkers": "1",
         "webAppAlwaysOn": false,
-        "webAppLinuxFxVersion": "NODE|lts",
+        "webAppLinuxFxVersion": "NODE:18-lts",
         "tenantId": "[subscription().tenantId]",
         "hostingPlanName": "[concat(variables('prefix'), 'hosting')]",
         "webAppName": "[concat(variables('prefix'), 'webapp')]",
