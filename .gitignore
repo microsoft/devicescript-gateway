@@ -13,3 +13,4 @@ local.settings.json
 pkg.zip
 tmp
 *.parameters.json
+debug.mjs

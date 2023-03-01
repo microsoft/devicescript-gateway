@@ -111,36 +111,39 @@ const zpd = pb?.filter(o => o.publishMethod === "ZipDeploy")
 if (!zpd) throw "failed to fetch zip deploy publishing profile"
 
 const doc = create()
-const pp = doc.ele('publishData').ele('publishProfile')
-Object.keys(zpd).forEach(key => pp.att(key, zpd[key]))
+const pd = doc.ele('publishData')
+const pp = pd.ele('publishProfile')
+pd.ele('databases')
+Object.keys(zpd).forEach(key => {
+    pp.att(key, zpd[key])
+})
 const publishProfile = doc.end({ prettyPrint: true })
 const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
 
 if (owner && repo && token) {
     echo(chalk.blue(`Creating GitHub repository secret with publishing profile...`))
     const octokit = new Octokit({ auth: token })
-    await sodium.ready
-    const key = (await octokit.request('GET /repos/{owner}/{repo}/actions/secrets/public-key', {
+    const respKey = (await octokit.request('GET /repos/{owner}/{repo}/actions/secrets/public-key', {
         owner,
         repo,
         headers: {
             'X-GitHub-Api-Version': '2022-11-28'
         }
-    })).key
+    }))
+    const key_id = respKey.data.key_id
+    const key = respKey.data.key
+    await sodium.ready
     // Convert Secret & Base64 key to Uint8Array.
     const binkey = sodium.from_base64(key, sodium.base64_variants.ORIGINAL)
     const binsec = sodium.from_string(publishProfile)
-
-    //Encrypt the secret using LibSodium
     const encBytes = sodium.crypto_box_seal(binsec, binkey)
-    // Convert encrypted Uint8Array to Base64
     const encrypted_value = sodium.to_base64(encBytes, sodium.base64_variants.ORIGINAL)
     await octokit.request('PUT /repos/{owner}/{repo}/actions/secrets/{secret_name}', {
         owner,
         repo,
         secret_name,
         encrypted_value,
-        key_id: 'publishingprofile',
+        key_id,
         headers: {
             'X-GitHub-Api-Version': '2022-11-28'
         }
