@@ -32,6 +32,10 @@ export const defaultPartition = "main"
 export function selfUrl() {
     // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
     const name = process.env["WEBSITE_SITE_NAME"]
+    console.log({
+        siteName: process.env["WEBSITE_SITE_NAME"],
+        sku: process.env["WEBSITE_SKU"],
+    })
     if (name) `https://${name}.azurewebsites.net`
     return process.env["SELF_URL"].replace(/\/$/, "")
 }
