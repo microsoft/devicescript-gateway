@@ -7,6 +7,8 @@ import { readFileSync } from "fs"
 import { create } from "xmlbuilder2"
 import sodium from "libsodium-wrappers"
 
+const GITHUB_API_VERSION = '2022-11-28'
+
 echo(`DeviceScript Gateway configuration.`)
 echo(``)
 echo(`This script will create a new resource group, with a web app, application insights, key vault and storage account.`)
@@ -94,6 +96,8 @@ const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
 
+const homepage = `https://${webAppName}.azurewebsites.net/swagger/`
+
 echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 
 // generate local resource file
@@ -127,13 +131,12 @@ if (owner && repo && token) {
         owner,
         repo,
         headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
         }
     }))
     const key_id = respKey.data.key_id
     const key = respKey.data.key
     await sodium.ready
-    // Convert Secret & Base64 key to Uint8Array.
     const binkey = sodium.from_base64(key, sodium.base64_variants.ORIGINAL)
     const binsec = sodium.from_string(publishProfile)
     const encBytes = sodium.crypto_box_seal(binsec, binkey)
@@ -145,7 +148,27 @@ if (owner && repo && token) {
         encrypted_value,
         key_id,
         headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
+        }
+    })
+
+    echo(chalk.blue("Trigger a build to deploy web site..."))
+    await octokit.request('POST /repos/{owner}/{repo}/dispatches', {
+        owner,
+        repo,
+        event_type: 'on-provision',
+        headers: {
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
+        }
+    })
+
+    echo(chalk.blue("Update repository homepage..."))
+    await octokit.request('PATCH /repos/{owner}/{repo}', {
+        owner,
+        repo,
+        homepage,
+        headers: {
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
         }
     })
 } else {
@@ -157,6 +180,6 @@ if (owner && repo && token) {
 
 // final notes
 echo(chalk.blue(`Azure resources and local development configured successfully`))
-echo(`-  navigate to https://${webAppName}.azurewebsites.net/swagger/`)
+echo(`-  navigate to ${homepage}`)
 echo(`   and sign in as user: admin, password: ${adminPassword}`)
 echo(`   (you can find the key in vault ${keyVaultName}/secrets/passwords.)`)
