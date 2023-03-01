@@ -90,7 +90,6 @@ az deployment group create \
   --resource-group $resourceGroup \
   --template-file $templateFile \
   --parameters $parametersFile`).stdout)
-const did = dinfo
 const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
@@ -104,18 +103,19 @@ KEY_VAULT_NAME="${keyVaultName}"
 SELF_URL="http://0.0.0.0:7071"`, { encoding: "utf8" })
 
 // download publish profile
+echo(chalk.blue('Download publish profile...'))
 const pb = JSON.parse((await $`resourceGroup="${resourceGroup}"
 name="${webAppName}"
 az webapp deployment list-publishing-profiles --name $name --resource-group $resourceGroup`).stdout)
-const zpb = pb?.filter(o => o.publishMethod === "ZipDeploy")
-if (!zpb) throw "failed to fetch zip deploy publishing profile"
+const zpd = pb?.filter(o => o.publishMethod === "ZipDeploy")
+if (!zpd) throw "failed to fetch zip deploy publishing profile"
 
-echo('download publish profile...')
 const doc = create()
 const pp = doc.ele('publishData').ele('publishProfile')
 Object.keys(zpd).forEach(key => pp.att(key, zpd[key]))
-const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
 const publishProfile = doc.end({ prettyPrint: true })
+const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
+
 if (owner && repo && token) {
     echo(chalk.blue(`Creating GitHub repository secret with publishing profile...`))
     const octokit = new Octokit({ auth: token })
@@ -147,7 +147,7 @@ if (owner && repo && token) {
     })
 } else {
     const pfn = `${webAppName}.PublishSettings`
-    echo(chalk.blue(`publish profile: ${pfn}`))
+    echo(chalk.blue(`Write publish profile to ${pfn}`))
     echo(`-  add GitHub secret ${secret_name} with the content of ${pfn}`)
     fs.writeFileSync(pfn, publishProfile, { encoding: "utf8" })
 }
