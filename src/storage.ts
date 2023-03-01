@@ -37,7 +37,10 @@ export function selfUrl() {
         sku: process.env["WEBSITE_SKU"],
     })
     if (name) `https://${name}.azurewebsites.net`
-    return process.env["SELF_URL"].replace(/\/$/, "")
+    const url = process.env["SELF_URL"]?.replace(/\/$/, "")
+    if (url) return url
+
+    throw new Error("site name not configured")
 }
 
 export function selfHost() {
