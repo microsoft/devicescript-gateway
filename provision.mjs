@@ -182,6 +182,9 @@ az webapp deployment list-publishing-profiles --name $name --resource-group $res
 
 // final notes
 echo(chalk.blue(`Azure resources and local development configured successfully`))
+echo(`-  take a break, the web site is building and deploying and it takes a few minutes`)
 echo(`-  navigate to ${homepage}`)
-echo(`   and sign in as user: admin, password: ${adminPassword}`)
-echo(`   (you can find the key in vault ${keyVaultName}/secrets/passwords.)`)
+echo(`   and sign in as`)
+echo(`     user: admin`)
+echo(`     password: ${adminPassword}`)
+echo(`You can find the key in vault ${keyVaultName}/secrets/passwords.`)
