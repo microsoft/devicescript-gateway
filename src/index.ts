@@ -19,14 +19,14 @@ async function initAuth(server: FastifyInstance) {
     const secrets = createSecretClient()
     const passwordSecretName = process.env["PASSWORDS_SECRET"] || "passwords"
     const passwordsSecret = await secrets.getSecret(passwordSecretName)
-    if (!passwordsSecret.value)
-        throw new Error("passwords is empty")
+    if (!passwordsSecret.value) throw new Error("passwords is empty")
 
     const passwords = passwordsSecret.value
         .split(/,/)
         .map(s => s.trim())
         .filter(s => /^\w+:.+/.test(s))
 
+    console.log({ passwords: passwords.map(p => p.split(":", 1)).join(",") })
     server.register(fastifyBasicAuth, {
         validate: async (
             username: string,
