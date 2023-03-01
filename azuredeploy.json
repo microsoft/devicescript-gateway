@@ -2,6 +2,13 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "gatewayVersion": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Version of the DeviceScript Gateway package"
+            }
+        },
         "namePrefix": {
             "type": "string",
             "minLength": 3,
@@ -207,7 +214,8 @@
             "name": "[variables('webAppName')]",
             "location": "[variables('location')]",
             "tags": {
-                "displayName": "[variables('webAppName')]"
+                "displayName": "[variables('webAppName')]",
+                "deviceScriptGateway": "[parameters('gatewayVersion')]"
             },
             "dependsOn": [
                 "[variables('serverFarmId')]",
@@ -247,11 +255,11 @@
         }
     ],
     "outputs": {
-        "admin-token": {
-            "type": "securestring",
-            "value": "[variables('adminToken')]"
+        "keyVaultName": {
+            "type": "string",
+            "value": "[variables('keyVaultName')]"
         },
-        "web-app-name": {
+        "webAppName": {
             "type": "string",
             "value": "[variables('webAppName')]"
         }
