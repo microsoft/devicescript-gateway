@@ -125,6 +125,16 @@ const publishProfile = doc.end({ prettyPrint: true })
 const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
 
 if (owner && repo && token) {
+    echo(chalk.blue("Update repository homepage..."))
+    await octokit.request('PATCH /repos/{owner}/{repo}', {
+        owner,
+        repo,
+        homepage,
+        headers: {
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
+        }
+    })
+
     echo(chalk.blue(`Creating GitHub repository secret with publishing profile...`))
     const octokit = new Octokit({ auth: token })
     const respKey = (await octokit.request('GET /repos/{owner}/{repo}/actions/secrets/public-key', {
@@ -157,16 +167,6 @@ if (owner && repo && token) {
         owner,
         repo,
         event_type: 'on-provision',
-        headers: {
-            'X-GitHub-Api-Version': GITHUB_API_VERSION
-        }
-    })
-
-    echo(chalk.blue("Update repository homepage..."))
-    await octokit.request('PATCH /repos/{owner}/{repo}', {
-        owner,
-        repo,
-        homepage,
         headers: {
             'X-GitHub-Api-Version': GITHUB_API_VERSION
         }
