@@ -38,7 +38,13 @@ Once the ARM template has run, your DeviceScript development gateway will be rea
 ```
 
 -   choose a name prefix and update it
--   find your user id and update `adminUserId` value
+-   open an Azure command prompt with the Azure Cli, login
+
+```bash
+az login --output yaml
+```
+
+-   find your user `id` and update `adminUserId` value
 
 ```bash
 az ad signed-in-user show --output yaml
@@ -53,12 +59,13 @@ openssl rand -base64 32
 -   create new resource group and run template and enter user id, admin password
 
 ```bash
+resourceGroup="DeviceScript"
 templateFile="azuredeploy.json"
 parametersFile="azuredeploy.parameters.json"
-az group create --name DeviceScriptCloud --location centralus --output yaml
+az group create --name $resourceGroup --location centralus --output yaml
 az deployment group create \
   --name devicescript \
-  --resource-group DeviceScriptCloud \
+  --resource-group $resourceGroup \
   --template-file $templateFile \
   --parameters $parametersFile \
   --output yaml
@@ -67,12 +74,13 @@ az deployment group create \
 -   clean up resources
 
 ```bash
-az group delete --name DeviceScriptCloud --output yaml
+resourceGroup="DeviceScript"
+az group delete --name $resourceGroup --output yaml
 ```
 
 Key vaults might have a soft-delete policy and you'll need to change the prefix or purge them.
 
--   create a new `.env` file (it is git ignored) and include the key vault name and the local url
+-   create a new `.env` file (it is git ignored) and include the key vault name and the local url, for local testing.
 
 ```txt
 KEY_VAULT_NAME="create key vault name"
