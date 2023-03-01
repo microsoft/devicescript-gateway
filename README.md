@@ -80,6 +80,9 @@ az deployment group create \
 -   open the Azure portal and open the new web app
 -   download the publish profile and store it as a secret in the github secrets section under `AZURE_WEBAPP_PUBLISH_PROFILE`
 
+-   trigger a build and the web app will deploy automatically
+-   do a post to `/api/setup` to configure the storage accounts
+
 ## Clean up resources
 
 To delete the entire resource group, and start clean.
