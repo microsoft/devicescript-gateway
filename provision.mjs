@@ -26,7 +26,21 @@ if (!namePrefix) throw "no name prefix given"
 
 const owner = process.env["GH_OWNER"] ?? await question(chalk.blue("Enter Github repository owner (env GH_OWNER): "))
 const repo = owner ? process.env["GH_REPO"] ?? await question(chalk.blue("Enter Github repository repo name (env GH_REPO): ")) : undefined
-const token = owner ? process.env["GH_TOKEN"] ?? await question(chalk.blue("Enter Github token with repo scope (env GH_TOKEN, https://github.com/settings/personal-access-tokens/new with scopes actions, secrets): ")) : undefined
+const token = owner && repo ? process.env["GH_TOKEN"] ?? await question(chalk.blue("Enter Github token with repo scope (env GH_TOKEN, https://github.com/settings/personal-access-tokens/new with scopes actions, secrets): ")) : undefined
+
+const octokit = token ? new Octokit({ auth: token }) : undefined
+if (octokit) {
+    echo(chalk.blue(`Checking Github repository...`))
+    const res = await octokit.request('GET /repos/{owner}/{repo}', {
+        owner,
+        repo,
+        headers: {
+            'X-GitHub-Api-Version': GITHUB_API_VERSION
+        }
+    })
+    if (res.status !== 200)
+        throw new "invalid Github repository information"
+}
 
 // check if resource group already exists
 echo(`Searching for existing resource group ${resourceGroup}...`)
@@ -45,7 +59,7 @@ echo(chalk.blue(`Looking for deleting keyvaults that might name clash...`))
 const deletevaults = JSON.parse((await $`az keyvault list-deleted`).stdout)
 const deletedvault = deletevaults?.find(v => v.name === `${namePrefix.toLowerCase()}keys`)
 if (deletedvault)
-    throw `delete keyvault ${deletedvault.name} already exists`
+    throw `deleted keyvault ${deletedvault.name} already exists`
 
 // fetch current user azure id
 echo(chalk.blue(`Resolving Azure sign in user information...`))
@@ -107,13 +121,13 @@ KEY_VAULT_NAME="${keyVaultName}"
 SELF_URL="http://0.0.0.0:7071"`, { encoding: "utf8" })
 
 
-if (owner && repo && token) {
+if (octokit) {
     // download publish profile
     echo(chalk.blue('Download publish profile...'))
     const pb = JSON.parse((await $`resourceGroup="${resourceGroup}"
 name="${webAppName}"
 az webapp deployment list-publishing-profiles --name $name --resource-group $resourceGroup`).stdout)
-    const zpd = pb?.filter(o => o.publishMethod === "ZipDeploy")
+    const zpd = pb?.find(o => o.publishMethod === "ZipDeploy")
     if (!zpd) throw "failed to fetch zip deploy publishing profile"
 
     const doc = create()
@@ -126,18 +140,7 @@ az webapp deployment list-publishing-profiles --name $name --resource-group $res
     const publishProfile = doc.end({ prettyPrint: true })
     const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
 
-    echo(chalk.blue("Update repository homepage..."))
-    await octokit.request('PATCH /repos/{owner}/{repo}', {
-        owner,
-        repo,
-        homepage,
-        headers: {
-            'X-GitHub-Api-Version': GITHUB_API_VERSION
-        }
-    })
-
     echo(chalk.blue(`Creating GitHub repository secret with publishing profile...`))
-    const octokit = new Octokit({ auth: token })
     const respKey = (await octokit.request('GET /repos/{owner}/{repo}/actions/secrets/public-key', {
         owner,
         repo,
@@ -163,11 +166,12 @@ az webapp deployment list-publishing-profiles --name $name --resource-group $res
         }
     })
 
-    echo(chalk.blue("Trigger a build to deploy web site..."))
-    await octokit.request('POST /repos/{owner}/{repo}/dispatches', {
+    echo(chalk.blue("Trigger a Github Action `build.yml`..."))
+    await octokit.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', {
         owner,
         repo,
-        event_type: 'on-provision',
+        workflow_id: 'build.yml',
+        ref: 'main',
         headers: {
             'X-GitHub-Api-Version': GITHUB_API_VERSION
         }
