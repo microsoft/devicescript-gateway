@@ -50,6 +50,12 @@ az login --output yaml
 az ad signed-in-user show --output yaml
 ```
 
+```console
+...
+id: ....
+...
+```
+
 -   create a new password and udpate `adminPassword`
 
 ```bash
@@ -71,7 +77,12 @@ az deployment group create \
   --output yaml
 ```
 
--   clean up resources
+-   open the Azure portal and open the new web app
+-   download the publish profile and store it as a secret in the github secrets section under `AZURE_WEBAPP_PUBLISH_PROFILE`
+
+## Clean up resources
+
+To delete the entire resource group, and start clean.
 
 ```bash
 resourceGroup="DeviceScript"
@@ -80,14 +91,14 @@ az group delete --name $resourceGroup --output yaml
 
 Key vaults might have a soft-delete policy and you'll need to change the prefix or purge them.
 
+## Local development
+
 -   create a new `.env` file (it is git ignored) and include the key vault name and the local url, for local testing.
 
 ```txt
 KEY_VAULT_NAME="create key vault name"
 SELF_URL="http://0.0.0.0:7071"
 ```
-
-## Local development
 
 -   start a local instance using
 
@@ -103,7 +114,7 @@ yarn dev
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
 
@@ -117,8 +128,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
