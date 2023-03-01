@@ -31,10 +31,11 @@
     "swagger-ui-dist": "^4.15.0"
   },
   "devDependencies": {
-    "@octokit/request": "^6.2.3",
+    "@octokit/core": "^4.2.0",
     "@types/http-errors": "^1.8.2",
     "@types/node": "16.x",
     "@types/ws": "^8.5.3",
+    "libsodium-wrappers": "^0.7.11",
     "typescript": "^4.0.0",
     "xmlbuilder2": "^3.0.2",
     "zx": "^7.2.0"
