@@ -26,7 +26,7 @@ if (!namePrefix) throw "no name prefix given"
 
 const owner = process.env["GH_OWNER"] ?? await question(chalk.blue("Enter Github repository owner (env GH_OWNER): "))
 const repo = owner ? process.env["GH_REPO"] ?? await question(chalk.blue("Enter Github repository repo name (env GH_REPO): ")) : undefined
-const token = owner ? process.env["GH_TOKEN"] ?? await question(chalk.blue("Enter Github token with repo scope (env GH_TOKEN, https://github.com/settings/personal-access-tokens/new): ")) : undefined
+const token = owner ? process.env["GH_TOKEN"] ?? await question(chalk.blue("Enter Github token with repo scope (env GH_TOKEN, https://github.com/settings/personal-access-tokens/new with scopes actions, secrets): ")) : undefined
 
 // check if resource group already exists
 echo(`Searching for existing resource group ${resourceGroup}...`)
@@ -106,25 +106,26 @@ fs.writeFileSync(".env",
 KEY_VAULT_NAME="${keyVaultName}"
 SELF_URL="http://0.0.0.0:7071"`, { encoding: "utf8" })
 
-// download publish profile
-echo(chalk.blue('Download publish profile...'))
-const pb = JSON.parse((await $`resourceGroup="${resourceGroup}"
-name="${webAppName}"
-az webapp deployment list-publishing-profiles --name $name --resource-group $resourceGroup`).stdout)
-const zpd = pb?.filter(o => o.publishMethod === "ZipDeploy")
-if (!zpd) throw "failed to fetch zip deploy publishing profile"
-
-const doc = create()
-const pd = doc.ele('publishData')
-const pp = pd.ele('publishProfile')
-pd.ele('databases')
-Object.keys(zpd).forEach(key => {
-    pp.att(key, zpd[key])
-})
-const publishProfile = doc.end({ prettyPrint: true })
-const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
 
 if (owner && repo && token) {
+    // download publish profile
+    echo(chalk.blue('Download publish profile...'))
+    const pb = JSON.parse((await $`resourceGroup="${resourceGroup}"
+name="${webAppName}"
+az webapp deployment list-publishing-profiles --name $name --resource-group $resourceGroup`).stdout)
+    const zpd = pb?.filter(o => o.publishMethod === "ZipDeploy")
+    if (!zpd) throw "failed to fetch zip deploy publishing profile"
+
+    const doc = create()
+    const pd = doc.ele('publishData')
+    const pp = pd.ele('publishProfile')
+    pd.ele('databases')
+    Object.keys(zpd).forEach(key => {
+        pp.att(key, zpd[key])
+    })
+    const publishProfile = doc.end({ prettyPrint: true })
+    const secret_name = "AZURE_WEBAPP_PUBLISH_PROFILE"
+
     echo(chalk.blue("Update repository homepage..."))
     await octokit.request('PATCH /repos/{owner}/{repo}', {
         owner,
@@ -172,10 +173,7 @@ if (owner && repo && token) {
         }
     })
 } else {
-    const pfn = `${webAppName}.PublishSettings`
-    echo(chalk.blue(`Write publish profile to ${pfn}`))
-    echo(`-  add GitHub secret ${secret_name} with the content of ${pfn}`)
-    fs.writeFileSync(pfn, publishProfile, { encoding: "utf8" })
+    echo(chalk.red(`Publishing profile not configured in GitHub secrets!`))
 }
 
 // final notes
