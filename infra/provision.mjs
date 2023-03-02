@@ -36,12 +36,11 @@ const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue(
 if (!namePrefix) throw "no name prefix given"
 
 const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner/repo (env GITHUB_REPOSITORY): "))
+const [owner, repo] = slug?.split("/")
 // codespace token cannot create/access secrets
-const token = slug ? process.env["DEVS_GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env DEVS_GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
-
-const octokit = token ? new Octokit({ auth: token }) : undefined
+const token = owner && repo ? process.env["DEVS_GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env DEVS_GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
+const octokit = owner && token && token ? new Octokit({ auth: token }) : undefined
 if (octokit) {
-    const [owner, repo] = slug.split("/")
     echo(chalk.blue(`Checking Github repository ${owner}/${repo}...`))
     const res = await octokit.request('GET /repos/{owner}/{repo}', {
         owner,
@@ -61,7 +60,7 @@ if (exists?.length) {
     const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] || await question(chalk.red("Resource group already exists, delete? (yes/no, env DEVS_DELETE_EXISTING_RESOURCE_GROUP): "), { choices: ["yes", "no"] })
     if (config !== "yes") throw "resource group already exists"
 
-    echo(`deleting resource group ${resourceGroup}...`)
+    echo(chalk.blue(`Deleting resource group ${resourceGroup}...`))
     await $`az group delete --yes --name ${resourceGroup}`
 }
 

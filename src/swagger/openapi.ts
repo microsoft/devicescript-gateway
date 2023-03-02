@@ -19,7 +19,6 @@ import {
     sArray,
     del,
     pPath,
-    spec,
     setVisibility,
     patch,
     put,
@@ -31,7 +30,7 @@ import {
     pQuery,
 } from "./gen"
 
-export function jacdacSpec() {
+export function generateOpenApiSpec() {
     const root = selfUrl()
     init(`${root}/api`, {
         title: webSiteName(),
@@ -367,15 +366,13 @@ export function jacdacSpec() {
     )
 
     const scriptProps = {
-        name: example(sString("User-assigned name of script"), "my thermostat"),
+        name: example(sString("package/path"), "my-device/main"),
         meta: sObj({}),
     }
     const scriptBody = define(
         "ScriptBody",
         sObj({
-            blocks: sString("Blockly data"),
-            text: sString("Jacscript"),
-            compiled: sString("Hex-encoded"),
+            program: sObj({}),
         })
     )
     const scriptPropsWithBody = {
