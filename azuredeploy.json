@@ -136,7 +136,7 @@
                         "tenantId": "[variables('tenantId')]",
                         "objectId": "[reference(variables('webAppId'), variables('webAppApiVersion'), 'Full').identity.principalId]",
                         "permissions": {
-                            "secrets": ["get", "create", "update"]
+                            "secrets": ["get", "set"]
                         }
                     }
                 ],
