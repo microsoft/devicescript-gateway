@@ -35,15 +35,12 @@ export function webSiteName() {
  * Something like https://foobar.azurewebsites.net or http://localhost:1234
  */
 export function selfUrl() {
-    // local dev environment
-    const url = process.env["DEVS_SELF_URL"]?.replace(/\/$/, "")
-    if (url) return url
-
     // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
-    const siteName = process.env["WEBSITE_SITE_NAME"]
-    if (siteName) return `https://${siteName}.azurewebsites.net`
-
-    throw new Error("site name not configured")
+    const hostname = process.env["WEBSITE_HOSTNAME"]
+    if (!hostname)
+        throw new Error("WEBSITE_HOSTNAME not configured")
+    const protocol = /^(0\.|localhost)/i.test(hostname) ? "http" : "https"
+    return `${protocol}://${hostname}`
 }
 
 export function selfHost() {
