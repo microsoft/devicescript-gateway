@@ -3,105 +3,14 @@
 This project contains a prototype development gateway implementation
 for the built-in DeviceScript cloud integration.
 
+-  [Read the documentation](https://microsoft.github.io/devicescript/developer/gateway)
+
 | :exclamation: This implementation is for prototyping only and not meant for production. |
 | --------------------------------------------------------------------------------------- |
 
-## TODOs
-
--   [ ] program deployment
--   [ ] figure out why methods don't work
--   [ ]
-
-## Setup
-
-The ARM template creates a Web App (F1 by default), Server farm, Application Insights, a Key Vault and a Storage.
-Once the ARM template has run, your DeviceScript development gateway will be ready to use.
-
--   create a parameter file `azuredeploy.parameters.json` (it's .gitignored)
-
-```json
-{
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "namePrefix": {
-            "value": ""
-        },
-        "adminUserId": {
-            "value": ""
-        },
-        "adminPassword": {
-            "value": ""
-        }
-    }
-}
-```
-
--   choose a name prefix and update it
--   open an Azure command prompt with the Azure Cli, login
-
-```bash
-az login --output yaml
-```
-
--   find your user `id` and update `adminUserId` value
-
-```bash
-az ad signed-in-user show --output yaml
-```
-
-```console
-...
-id: ....
-...
-```
-
--   create a new password and udpate `adminPassword`
-
-```bash
-openssl rand -base64 32
-```
-
--   create new resource group and run template and enter user id, admin password
-
-```bash
-resourceGroup="DeviceScript"
-templateFile="azuredeploy.json"
-parametersFile="azuredeploy.parameters.json"
-az group create --name $resourceGroup --location centralus --output yaml
-az deployment group create \
-  --name devicescript \
-  --resource-group $resourceGroup \
-  --template-file $templateFile \
-  --parameters $parametersFile \
-  --output yaml
-```
-
--   open the Azure portal and open the new web app
--   download the publish profile and store it as a secret in the github secrets section under `AZURE_WEBAPP_PUBLISH_PROFILE`
-
--   trigger a build and the web app will deploy automatically
--   do a post to `/api/setup` to configure the storage accounts
-
-## Clean up resources
-
-To delete the entire resource group, and start clean.
-
-```bash
-resourceGroup="DeviceScript"
-az group delete --name $resourceGroup --output yaml
-```
-
-Key vaults might have a soft-delete policy and you'll need to change the prefix or purge them.
-
 ## Local development
 
--   create a new `.env` file (it is git ignored) and include the key vault name and the local url, for local testing.
-
-```txt
-KEY_VAULT_NAME="create key vault name"
-SELF_URL="http://0.0.0.0:7071"
-```
+Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
 -   start a local instance using
 
@@ -112,8 +21,6 @@ yarn dev
 -   after running head to http://127.0.0.1:7071/swagger/ or otherwise the live site
 -   Click Authorize
 -   Use user/password from the `passwords` secret in the key vault
-
-## Deployment
 
 ## Contributing
 
