@@ -8,6 +8,7 @@ import { create } from "xmlbuilder2"
 import sodium from "libsodium-wrappers"
 
 const GITHUB_API_VERSION = '2022-11-28'
+const codespace = !!process.env.CODESPACES
 
 echo(`DeviceScript Gateway configuration.`)
 echo(``)
@@ -15,22 +16,23 @@ echo(`This script will create a new resource group, with a web app, application 
 echo(`Make sure that you have the Azure CLI available and you are logged in.`)
 echo(``)
 
-const gatewayVersion = JSON.parse(readFileSync("./package.json", { encoding: "utf8" })).version
+const pkg = JSON.parse(readFileSync("./package.json", { encoding: "utf8" }))
+const gatewayVersion = pkg.version
 echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
-const resourceGroup = await question(chalk.blue("Pick a name for the resource group: "))
+const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] ?? await question(chalk.blue("Pick a name for the resource group: "))
 if (!resourceGroup) throw "no resource group name given"
 
-const namePrefix = await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
+const namePrefix = process.env["DEVS_NAME_PREFIX"] ?? await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
 if (!namePrefix) throw "no name prefix given"
 
-const owner = process.env["GH_OWNER"] ?? await question(chalk.blue("Enter Github repository owner (env GH_OWNER): "))
-const repo = owner ? process.env["GH_REPO"] ?? await question(chalk.blue("Enter Github repository repo name (env GH_REPO): ")) : undefined
-const token = owner && repo ? process.env["GH_TOKEN"] ?? await question(chalk.blue("Enter Github token with repo scope (env GH_TOKEN, https://github.com/settings/personal-access-tokens/new with scopes actions, secrets): ")) : undefined
+const slug = process.env["GITHUB_REPOSITORY"] ?? await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
+const token = slug ? process.env["GITHUB_TOKEN"] ?? await question(chalk.blue("Enter Github token (env GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
 
 const octokit = token ? new Octokit({ auth: token }) : undefined
 if (octokit) {
-    echo(chalk.blue(`Checking Github repository...`))
+    const [owner, repo] = slug.split("/")
+    echo(chalk.blue(`Checking Github repository ${owner}/${repo}...`))
     const res = await octokit.request('GET /repos/{owner}/{repo}', {
         owner,
         repo,
@@ -46,7 +48,7 @@ if (octokit) {
 echo(`Searching for existing resource group ${resourceGroup}...`)
 const exists = JSON.parse((await $`az group list --query "[?name=='${resourceGroup}']"`).stdout)
 if (exists?.length) {
-    const config = await question(chalk.red("Resource group already exists, delete? (yes/no) "), { choices: ["yes", "no"] })
+    const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] ?? await question(chalk.red("Resource group already exists, delete? (yes/no) "), { choices: ["yes", "no"] })
     if (config !== "yes") throw "resource group already exists"
 
     echo(`deleting resource group ${resourceGroup}...`)
