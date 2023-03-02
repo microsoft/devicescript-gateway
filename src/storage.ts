@@ -50,6 +50,7 @@ async function createTableIfNotExists(table: TableClient) {
         const r = await table.getEntity("no-partition", "no-row-key")
         console.log({ r })
     } catch (e) {
+        console.log(e)
         console.log(`creating table ${table.tableName}`)
         await table.createTable()
     }
