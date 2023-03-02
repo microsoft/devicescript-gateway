@@ -20,14 +20,14 @@ const pkg = JSON.parse(readFileSync("./package.json", { encoding: "utf8" }))
 const gatewayVersion = pkg.version
 echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
-const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] ?? await question(chalk.blue("Pick a name for the resource group: "))
+const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] || await question(chalk.blue("Pick a name for the resource group: "))
 if (!resourceGroup) throw "no resource group name given"
 
-const namePrefix = process.env["DEVS_NAME_PREFIX"] ?? await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
+const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
 if (!namePrefix) throw "no name prefix given"
 
-const slug = process.env["GITHUB_REPOSITORY"] ?? await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
-const token = slug ? process.env["GITHUB_TOKEN"] ?? await question(chalk.blue("Enter Github token (env GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
+const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
+const token = slug ? process.env["GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
 
 const octokit = token ? new Octokit({ auth: token }) : undefined
 if (octokit) {
@@ -48,7 +48,7 @@ if (octokit) {
 echo(`Searching for existing resource group ${resourceGroup}...`)
 const exists = JSON.parse((await $`az group list --query "[?name=='${resourceGroup}']"`).stdout)
 if (exists?.length) {
-    const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] ?? await question(chalk.red("Resource group already exists, delete? (yes/no) "), { choices: ["yes", "no"] })
+    const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] || await question(chalk.red("Resource group already exists, delete? (yes/no) "), { choices: ["yes", "no"] })
     if (config !== "yes") throw "resource group already exists"
 
     echo(`deleting resource group ${resourceGroup}...`)
