@@ -227,15 +227,15 @@
                             "value": "[reference(variables('appInsightsName'), variables('appInsightsApiVersion')).InstrumentationKey]"
                         },
                         {
-                            "name": "KEY_VAULT_NAME",
+                            "name": "DEVS_KEY_VAULT_NAME",
                             "value": "[variables('keyVaultName')]"
                         },
                         {
-                            "name": "STORAGE_CONNECTION_STRING_SECRET",
+                            "name": "DEVS_STORAGE_CONNECTION_STRING_SECRET",
                             "value": "[variables('storageConnectionStringSecretName')]"
                         },
                         {
-                            "name": "PASSWORDS_SECRET",
+                            "name": "DEVS_PASSWORDS_SECRET",
                             "value": "[variables('passwordsSecretName')]"
                         }
                     ]

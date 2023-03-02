@@ -35,11 +35,13 @@ export function webSiteName() {
  * Something like https://foobar.azurewebsites.net or http://localhost:1234
  */
 export function selfUrl() {
+    // local dev environment
+    const url = process.env["DEVS_SELF_URL"]?.replace(/\/$/, "")
+    if (url) return url
+
     // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
     const siteName = process.env["WEBSITE_SITE_NAME"]
     if (siteName) return `https://${siteName}.azurewebsites.net`
-    const url = process.env["SELF_URL"]?.replace(/\/$/, "")
-    if (url) return url
 
     throw new Error("site name not configured")
 }
@@ -53,7 +55,7 @@ export function selfHost() {
 export async function setup() {
     const secrets = createSecretClient()
     const connectionStringSecretName =
-        process.env["STORAGE_CONNECTION_STRING_SECRET"] ||
+        process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
         "storageAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
     const connStr = connStrSecret.value

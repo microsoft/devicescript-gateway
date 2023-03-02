@@ -8,7 +8,6 @@ import { create } from "xmlbuilder2"
 import sodium from "libsodium-wrappers"
 
 const GITHUB_API_VERSION = '2022-11-28'
-const codespace = !!process.env.CODESPACES
 
 echo(`DeviceScript Gateway configuration.`)
 echo(``)
@@ -16,7 +15,7 @@ echo(`This script will create a new resource group, with a web app, application 
 echo(`Make sure that you have the Azure CLI available and you are logged in.`)
 echo(``)
 
-const pkg = JSON.parse(readFileSync("./package.json", { encoding: "utf8" }))
+const pkg = JSON.parse(readFileSync("../package.json", { encoding: "utf8" }))
 const gatewayVersion = pkg.version
 echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
@@ -119,10 +118,12 @@ echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 
 // generate local resource file
 fs.writeFileSync(".env",
-    `RESOURCE_GROUP="${resourceGroup}"
-KEY_VAULT_NAME="${keyVaultName}"
-SELF_URL="http://0.0.0.0:7071"`, { encoding: "utf8" })
-
+    `WEBSITE_RESOURCE_GROUP="${resourceGroup}"
+WEBSITE_SITE_NAME="${webAppName}"
+WEBSITE_HOSTNAME=0.0.0.0:7071
+DEVS_KEY_VAULT_NAME="${keyVaultName}"
+DEVS_SWAGGER_URL="${homepage}"
+DEVS_SELF_URL="http://0.0.0.0:7071"`, { encoding: "utf8" })
 
 if (octokit) {
     // download publish profile

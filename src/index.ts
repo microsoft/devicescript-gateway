@@ -18,7 +18,7 @@ import { jacdacSpec } from "./swagger/powerjacdac"
 
 async function initAuth(server: FastifyInstance) {
     const secrets = createSecretClient()
-    const passwordSecretName = process.env["PASSWORDS_SECRET"] || "passwords"
+    const passwordSecretName = process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
     const passwordsSecret = await secrets.getSecret(passwordSecretName)
     if (!passwordsSecret.value) throw new Error("passwords is empty")
 
