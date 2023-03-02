@@ -19,10 +19,19 @@ const pkg = JSON.parse(readFileSync("../package.json", { encoding: "utf8" }))
 const gatewayVersion = pkg.version
 echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
-const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] || await question(chalk.blue("Pick a name for the resource group: "))
+const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] || await question(chalk.blue("Pick a name for the new resource group (env DEVS_RESOURCE_GROUP): "))
 if (!resourceGroup) throw "no resource group name given"
 
-const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters): "))
+let resourceLocation = process.env["DEVS_LOCATION"]
+if (!resourceLocation) {
+    const locations = JSON.parse((await $`az account list-locations`).stdout).map(loc => loc.name)
+    echo(`locations: ${locations.join(", ")}`)
+    resourceLocation = await question("Pick a region location for the resource group (env DEVS_LOCATION): ", { choices: locations })
+}
+if (!resourceLocation)
+    throw "no location provided"
+
+const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters, env DEVS_NAME_PREFIX): "))
 if (!namePrefix) throw "no name prefix given"
 
 const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
@@ -52,8 +61,7 @@ if (exists?.length) {
     if (config !== "yes") throw "resource group already exists"
 
     echo(`deleting resource group ${resourceGroup}...`)
-    await $`resourceGroup="${resourceGroup}"
-az group delete --yes --name $resourceGroup`
+    await $`az group delete --yes --name ${resourceGroup}`
 }
 
 // check keyvaults already exist
@@ -94,20 +102,18 @@ fs.writeFileSync(parameterFile, JSON.stringify({
     }
 }, null, 4), { encoding: "utf8" })
 
-const rsinfo = JSON.parse((await $`resourceGroup="${resourceGroup}"
-az group create --name $resourceGroup --location centralus`).stdout)
+const rsinfo = JSON.parse((await $`az group create --name ${resourceGroup} --location ${resourceLocation}`).stdout)
 
 echo(chalk.blue(`Resource group: ${rsinfo.name}, ${rsinfo.id}`))
 
 // create resources
-const dinfo = JSON.parse((await $`resourceGroup="${resourceGroup}"
-templateFile="azuredeploy.json"
-parametersFile="${parameterFile}"
-az deployment group create \
-  --name devicescript \
-  --resource-group $resourceGroup \
-  --template-file $templateFile \
-  --parameters $parametersFile`).stdout)
+const deploymentName = "devicescript"
+const templateFile = "azuredeploy.json"
+const dinfo = JSON.parse((await $`az deployment group create \
+  --name ${deploymentName} \
+  --resource-group ${resourceGroup} \
+  --template-file ${templateFile} \
+  --parameters ${parametersFile}`).stdout)
 const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
@@ -118,7 +124,7 @@ echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 
 // generate local resource file
 // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
-fs.writeFileSync(".env",
+fs.writeFileSync("../.env",
     `WEBSITE_RESOURCE_GROUP="${resourceGroup}"
 WEBSITE_SITE_NAME="${webAppName}"
 WEBSITE_HOSTNAME=0.0.0.0:7071
@@ -129,9 +135,7 @@ DEVS_SWAGGER_URL="${homepage}"
 if (octokit) {
     // download publish profile
     echo(chalk.blue('Download publish profile...'))
-    const pb = JSON.parse((await $`resourceGroup="${resourceGroup}"
-name="${webAppName}"
-az webapp deployment list-publishing-profiles --name $name --resource-group $resourceGroup`).stdout)
+    const pb = JSON.parse((await $`az webapp deployment list-publishing-profiles --name ${webAppName} --resource-group ${resourceGroup}`).stdout)
     const zpd = pb?.find(o => o.publishMethod === "ZipDeploy")
     if (!zpd) throw "failed to fetch zip deploy publishing profile"
 

@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "provision": "cd infra && zx ./provision.mjs",
+    "unprovision": "cd infra && zx ./unprovision.mjs",
     "debug": "cd infra && zx ./debug.mjs",
     "build": "tsc",
     "watch": "tsc -w",
