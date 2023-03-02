@@ -24,9 +24,10 @@ if (!resourceGroup) throw "no resource group name given"
 
 let resourceLocation = process.env["DEVS_LOCATION"]
 if (!resourceLocation) {
+    echo(chalk.blue("Searching for available Azure locations..."))
     const locations = JSON.parse((await $`az account list-locations`).stdout).map(loc => loc.name)
     echo(`locations: ${locations.join(", ")}`)
-    resourceLocation = await question("Pick a region location for the resource group (env DEVS_LOCATION): ", { choices: locations })
+    resourceLocation = await question(chalk.blue("Pick a region location for the resource group (env DEVS_LOCATION): "), { choices: locations })
 }
 if (!resourceLocation)
     throw "no location provided"
@@ -34,7 +35,7 @@ if (!resourceLocation)
 const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue("Pick a name prefix for generated resources (unique, > 3 and < 13 characters, env DEVS_NAME_PREFIX): "))
 if (!namePrefix) throw "no name prefix given"
 
-const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
+const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner/repo (env GITHUB_REPOSITORY): "))
 // codespace token cannot create/access secrets
 const token = slug ? process.env["DEVS_GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env DEVS_GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
 
