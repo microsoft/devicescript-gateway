@@ -58,7 +58,7 @@ if (octokit) {
 echo(`Searching for existing resource group ${resourceGroup}...`)
 const exists = JSON.parse((await $`az group list --query "[?name=='${resourceGroup}']"`).stdout)
 if (exists?.length) {
-    const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] || await question(chalk.red("Resource group already exists, delete? (yes/no) "), { choices: ["yes", "no"] })
+    const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] || await question(chalk.red("Resource group already exists, delete? (yes/no, env DEVS_DELETE_EXISTING_RESOURCE_GROUP): "), { choices: ["yes", "no"] })
     if (config !== "yes") throw "resource group already exists"
 
     echo(`deleting resource group ${resourceGroup}...`)
@@ -114,7 +114,7 @@ const dinfo = JSON.parse((await $`az deployment group create \
   --name ${deploymentName} \
   --resource-group ${resourceGroup} \
   --template-file ${templateFile} \
-  --parameters ${parametersFile}`).stdout)
+  --parameters ${parameterFile}`).stdout)
 const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
