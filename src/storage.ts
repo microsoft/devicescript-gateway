@@ -80,6 +80,7 @@ export async function setup() {
     await devicesTable.createTable()
     await messageHooksTable.createTable()
     await scriptsTable.createTable()
+    await scriptVersionsTable.createTable()
     await telemetryTable.createTable()
     await scriptsBlobs.createIfNotExists()
 
