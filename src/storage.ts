@@ -45,6 +45,16 @@ export function selfHost() {
         .replace(/\/.*/, "")
 }
 
+async function createTableIfNotExists(table: TableClient) {
+    try {
+        const r = await table.getEntity("no-partition", "no-row-key")
+        console.log({ r })
+    } catch (e) {
+        console.log(`creating table ${table.tableName}`)
+        await table.createTable()
+    }
+}
+
 export async function setup() {
     const secrets = createSecretClient()
     const connectionStringSecretName =
@@ -73,12 +83,10 @@ export async function setup() {
         "telemetry" + suff
     )
 
-    await devicesTable.createTable()
-    await messageHooksTable.createTable()
-    await scriptsTable.createTable()
-    await scriptVersionsTable.createTable()
-    await telemetryTable.createTable()
-
+    await createTableIfNotExists(devicesTable)
+    await createTableIfNotExists(messageHooksTable)
+    await createTableIfNotExists(scriptsTable)
+    await createTableIfNotExists(telemetryTable)
     await scriptsBlobs.createIfNotExists()
 
     if (false) {

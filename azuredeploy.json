@@ -36,7 +36,6 @@
     "variables": {
         "prefix": "[toLower(parameters('namePrefix'))]",
         "blobServicesName": "default",
-        "containerName": "container",
         "location": "[resourceGroup().location]",
         "serverfarmsApiVersion": "2015-08-01",
         "storageApiVersion": "2022-09-01",
@@ -59,7 +58,6 @@
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "keyVaultId": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
         "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-        "blobServicesId": "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), variables('blobServicesName'))]",
         "appInsightsId": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
         "webAppId": "[resourceId('Microsoft.Web/sites', variables('webAppName'))]",
         "storageConnectionStringSecretName": "storageAccountConnectionString",
@@ -96,15 +94,6 @@
                 "deleteRetentionPolicy": {
                     "enabled": false
                 }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "[variables('storageApiVersion')]",
-            "name": "[concat(variables('storageAccountName'), '/', variables('blobServicesName'), '/', variables('containerName'))]",
-            "dependsOn": ["[variables('blobServicesId')]"],
-            "properties": {
-                "publicAccess": "Blob"
             }
         },
         // app insights
@@ -147,7 +136,7 @@
                         "tenantId": "[variables('tenantId')]",
                         "objectId": "[reference(variables('webAppId'), variables('webAppApiVersion'), 'Full').identity.principalId]",
                         "permissions": {
-                            "secrets": ["get"]
+                            "secrets": ["get", "create", "update"]
                         }
                     }
                 ],

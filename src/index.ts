@@ -122,6 +122,7 @@ async function main() {
         done()
     })
 
+    await storage.setup()
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)
@@ -133,11 +134,6 @@ async function main() {
     server.register(
         async server => {
             server.addHook("onRequest", server.basicAuth)
-
-            server.post("/setup", async () => {
-                await storage.setup()
-                return {}
-            })
 
             await initHubRoutes(server)
             await initScriptRoutes(server)
