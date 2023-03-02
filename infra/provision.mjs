@@ -189,11 +189,16 @@ if (octokit) {
     echo(chalk.red(`Publishing profile not configured in GitHub secrets!`))
 }
 
+// download generate admin connection string
+const connString = JSON.parse((await $`az keyvault secret show --vault-name ${keyVaultName} --name adminConnectionString`).stdout).value
+
 // final notes
 echo(chalk.blue(`Azure resources and local development configured successfully`))
 echo(`-  take a break, the web site is building and deploying and it takes a few minutes`)
-echo(`-  navigate to ${homepage}`)
-echo(`   and sign in as`)
+echo(`-  navigate to ${homepage} and sign in as`)
 echo(`     user: admin`)
 echo(`     password: ${adminPassword}`)
-echo(`You can find the key in vault ${keyVaultName}/secrets/passwords.`)
+echo(`-  in Visual Studio Code, connect using`)
+echo(`     ${connString}`)
+echo(``)
+echo(`You can find the keys in vault ${keyVaultName}/secrets/(passwords, adminConnectionString).`)

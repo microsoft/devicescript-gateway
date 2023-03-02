@@ -62,7 +62,8 @@
         "webAppId": "[resourceId('Microsoft.Web/sites', variables('webAppName'))]",
         "storageConnectionStringSecretName": "storageAccountConnectionString",
         "adminToken": "[concat('admin:', parameters('adminPassword'))]",
-        "passwordsSecretName": "passwords"
+        "passwordsSecretName": "passwords",
+        "adminConnectionStringSecretName": "adminConnectionString"
     },
     "resources": [
         // storage
@@ -136,7 +137,7 @@
                         "tenantId": "[variables('tenantId')]",
                         "objectId": "[reference(variables('webAppId'), variables('webAppApiVersion'), 'Full').identity.principalId]",
                         "permissions": {
-                            "secrets": ["get", "set"]
+                            "secrets": ["get"]
                         }
                     }
                 ],
@@ -161,6 +162,17 @@
             ],
             "properties": {
                 "value": "[variables('adminToken')]"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
+            "dependsOn": [
+                "[variables('keyVaultId')]"
+            ],
+            "properties": {
+                "value": "[concat('WebAppName=', variables('webAppName') ,';AccountName=admin;AccountKey=', parameters('adminPassword'), ';EndPointSuffix=azurewebsites.net')]"
             }
         },
         {
