@@ -14,6 +14,7 @@ import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
 import { createSecretClient } from "./vault"
+import { jacdacSpec } from "./swagger/powerjacdac"
 
 async function initAuth(server: FastifyInstance) {
     const secrets = createSecretClient()
@@ -89,12 +90,7 @@ async function main() {
         resp.type("application/javascript").send(swaggerPresets)
     })
     server.get("/swagger/api.json", async (req, resp) => {
-        const swag = JSON.parse(
-            await readFile(
-                "power-connector/apiDefinition.swagger.json",
-                "utf-8"
-            )
-        )
+        const swag = jacdacSpec()
         swag.schemes = [storage.selfUrl().replace(/:.*/, "")]
         swag.host = storage.selfHost()
         return swag

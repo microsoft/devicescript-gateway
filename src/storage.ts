@@ -26,6 +26,11 @@ let telemetryTable: TableClient
 
 export const defaultPartition = "main"
 
+export function webSiteName() {
+    const siteName = process.env["WEBSITE_SITE_NAME"]
+    return siteName || "localhost"
+}
+
 /**
  * Something like https://foobar.azurewebsites.net or http://localhost:1234
  */
@@ -43,17 +48,6 @@ export function selfHost() {
     return selfUrl()
         .replace(/^\w+:\/\//, "")
         .replace(/\/.*/, "")
-}
-
-async function createTableIfNotExists(table: TableClient) {
-    try {
-        const r = await table.getEntity("no-partition", "no-row-key")
-        console.log({ r })
-    } catch (e) {
-        console.log(e)
-        console.log(`creating table ${table.tableName}`)
-        await table.createTable()
-    }
 }
 
 export async function setup() {
@@ -84,10 +78,10 @@ export async function setup() {
         "telemetry" + suff
     )
 
-    await createTableIfNotExists(devicesTable)
-    await createTableIfNotExists(messageHooksTable)
-    await createTableIfNotExists(scriptsTable)
-    await createTableIfNotExists(telemetryTable)
+    await devicesTable.createTable()
+    await messageHooksTable.createTable()
+    await scriptsTable.createTable()
+    await telemetryTable.createTable()
     await scriptsBlobs.createIfNotExists()
 
     if (false) {
