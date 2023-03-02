@@ -1,8 +1,12 @@
 {
-  "name": "jacdac-cloud",
-  "version": "2.0.0",
-  "description": "",
+  "name": "devicescript-gateway",
+  "version": "0.1.0",
+  "description": "Development Gateway infrastructure supporting DeviceScript.",
   "license": "MIT",
+  "private": true,
+  "files": [
+    "dist/**"
+  ],
   "scripts": {
     "provision": "zx ./provision.mjs",
     "debug": "zx ./debug.mjs",
