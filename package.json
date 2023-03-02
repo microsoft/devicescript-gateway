@@ -8,12 +8,13 @@
     "dist/**"
   ],
   "scripts": {
-    "provision": "zx ./provision.mjs",
-    "debug": "zx ./debug.mjs",
+    "provision": "cd infra && zx ./provision.mjs",
+    "unprovision": "cd infra && zx ./unprovision.mjs",
+    "debug": "cd infra && zx ./debug.mjs",
     "build": "tsc",
     "watch": "tsc -w",
     "start": "node dist/index.js",
-    "local": "node run.js",
+    "local": "node info/local.mjs",
     "dev": "yarn build && yarn local",
     "zip": "yarn build && rm -f pkg.zip && 7z a pkg.zip dist/ node_modules/ power-connector/ package.json -x!node_modules/typescript -x!node_modules/@types -xr!test",
     "deploy": "yarn zip && az webapp deployment source config-zip --resource-group Jacdac-Cloud  --name jacdac-portal2 --src pkg.zip"
@@ -40,6 +41,7 @@
     "@types/http-errors": "^1.8.2",
     "@types/node": "16.x",
     "@types/ws": "^8.5.3",
+    "dotenv": "^16.0.3",
     "libsodium-wrappers": "^0.7.11",
     "typescript": "^4.0.0",
     "xmlbuilder2": "^3.0.2",

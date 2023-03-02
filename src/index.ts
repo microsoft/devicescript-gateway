@@ -14,11 +14,11 @@ import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
 import { createSecretClient } from "./vault"
-import { jacdacSpec } from "./swagger/powerjacdac"
+import { generateOpenApiSpec } from "./swagger/openapi"
 
 async function initAuth(server: FastifyInstance) {
     const secrets = createSecretClient()
-    const passwordSecretName = process.env["PASSWORDS_SECRET"] || "passwords"
+    const passwordSecretName = process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
     const passwordsSecret = await secrets.getSecret(passwordSecretName)
     if (!passwordsSecret.value) throw new Error("passwords is empty")
 
@@ -90,10 +90,10 @@ async function main() {
         resp.type("application/javascript").send(swaggerPresets)
     })
     server.get("/swagger/api.json", async (req, resp) => {
-        const swag = jacdacSpec()
-        swag.schemes = [storage.selfUrl().replace(/:.*/, "")]
-        swag.host = storage.selfHost()
-        return swag
+        const spec = generateOpenApiSpec()
+        spec.schemes = [storage.selfUrl().replace(/:.*/, "")]
+        spec.host = storage.selfHost()
+        return spec
     })
     server.register(fastifyStatic, {
         root: require("swagger-ui-dist").absolutePath(),
