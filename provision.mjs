@@ -27,7 +27,8 @@ const namePrefix = process.env["DEVS_NAME_PREFIX"] || await question(chalk.blue(
 if (!namePrefix) throw "no name prefix given"
 
 const slug = process.env["GITHUB_REPOSITORY"] || await question(chalk.blue("Enter Github repository owner (env GITHUB_REPOSITORY): "))
-const token = slug ? process.env["GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
+// codespace token cannot create/access secrets
+const token = slug ? process.env["DEVS_GITHUB_TOKEN"] || await question(chalk.blue("Enter Github token (env DEVS_GITHUB_TOKEN, https://github.com/settings/personal-access-tokens/new with read+write scopes actions, secrets): ")) : undefined
 
 const octokit = token ? new Octokit({ auth: token }) : undefined
 if (octokit) {
