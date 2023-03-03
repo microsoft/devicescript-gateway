@@ -322,8 +322,7 @@ class ConnectedDevice {
                     d.scriptId,
                     d.scriptVersion
                 )
-                console.log({ body })
-                const tmp = Buffer.from(body.program.binary, "hex")
+                const tmp = body.program.binary.hex
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
                     const hd = tmp.slice(0, 8).toString("hex")
@@ -389,7 +388,6 @@ class ConnectedDevice {
                             msg,
                             Date.now() - 20
                         )
-                        console.log(telemetry)
                         this.trackEvent("telemetry")
                         await insertTelemetry(this.id.partitionKey, telemetry)
                     } catch (e: any) {
