@@ -120,7 +120,9 @@ class ConnectedDevice {
             ip: string
         },
         public log: FastifyBaseLogger
-    ) {}
+    ) {
+        this.trackEvent("open", { properties: { ip: this.meta.ip } })
+    }
 
     get id(): DeviceId {
         return this.dev
