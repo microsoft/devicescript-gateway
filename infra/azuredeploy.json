@@ -240,7 +240,7 @@
                 "[variables('eventHubAuthorizationRuleId')]"
             ],
             "properties": {
-                "value": "[reference(variables('eventHubAuthorizationRuleId')).primaryConnectionString]"
+                "value": "[listKeys(variables('eventHubAuthorizationRuleId'), variables('eventHubApiVersion')).keys[0].primaryConnectionString]"
             }
         },
         // web
