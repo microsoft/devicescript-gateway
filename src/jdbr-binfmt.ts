@@ -1,4 +1,4 @@
-import { Telemetry } from "./storage"
+import { Telemetry } from "./telemetry"
 
 function readU32(s: Buffer, off: number) {
     return s.readUInt32LE(off)

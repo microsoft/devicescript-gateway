@@ -11,6 +11,7 @@ import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
 import { fullDeviceId, pubToDevice, untilFromDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
+import { Telemetry } from "./telemetry"
 
 function displayName(info: DeviceInfo) {
     const devid = info.rowKey
@@ -269,7 +270,7 @@ async function execTelemetryQuery(
             ...q0,
         })
     ).map(r => {
-        const rr: storage.Telemetry = {
+        const rr: Telemetry = {
             ms: r.ms,
             brainId: r.brainId,
             sensorId: r.sensorId,

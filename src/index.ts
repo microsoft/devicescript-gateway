@@ -6,9 +6,9 @@ import fastifyCors from "@fastify/cors"
 import websocketPlugin from "@fastify/websocket"
 import { throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
-import { readFile } from "fs/promises"
 
 import * as storage from "./storage"
+import * as eventhub from "./eventhub"
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
@@ -18,7 +18,8 @@ import { generateOpenApiSpec } from "./swagger/openapi"
 
 async function initAuth(server: FastifyInstance) {
     const secrets = createSecretClient()
-    const passwordSecretName = process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
+    const passwordSecretName =
+        process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
     const passwordsSecret = await secrets.getSecret(passwordSecretName)
     if (!passwordsSecret.value) throw new Error("passwords is empty")
 
@@ -119,6 +120,7 @@ async function main() {
     })
 
     await storage.setup()
+    await eventhub.setup()
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)

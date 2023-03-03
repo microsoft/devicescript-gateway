@@ -12,6 +12,7 @@ import {
 import { runInBg } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
+import { insertTelemetry } from "./telemetry"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -357,7 +358,7 @@ class ConnectedDevice {
                             Date.now() - 20
                         )
                         console.log(telemetry)
-                        await storage.insertTelemetry(this.id.partitionKey, telemetry)
+                        await insertTelemetry(this.id.partitionKey, telemetry)
                     } catch (e: any) {
                         this.log.error(`upload-bin: ${e.stack}`)
                     }
