@@ -63,7 +63,7 @@ window.onload = function () {
 `
 
 async function main() {
-    const ai = await appinsights.setup()
+    await appinsights.setup()
 
     const server = fastify({
         disableRequestLogging: true,

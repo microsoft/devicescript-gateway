@@ -13,6 +13,8 @@ import { runInBg } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
 import { insertTelemetry } from "./telemetry"
+import { contextTagKeys, devsTelemetry } from "./appinsights"
+import { EventTelemetry } from "applicationinsights/out/Declarations/Contracts"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -94,6 +96,8 @@ class ConnectedDevice {
     lastMsg = 0
     stats = zeroDeviceStats()
 
+    readonly sessionId = crypto.randomBytes(32).toString("base64url")
+
     private deployId: string
     private deployVersion: number
     private deployBuffer: Buffer
@@ -106,7 +110,9 @@ class ConnectedDevice {
     sendMsg = async (msg: Buffer) => {}
     private unsub = noop
     private tickInt: any
-    constructor(public id: DeviceId, public log: FastifyBaseLogger) {}
+    constructor(public id: DeviceId, public log: FastifyBaseLogger) {
+        this.trackEvent("open")
+    }
 
     get path() {
         return fullDeviceId(this.id)
@@ -140,6 +146,7 @@ class ConnectedDevice {
         const s = crypto.createHash("sha256")
         s.update(this.deployBuffer)
         this.deployHash = s.digest()
+        this.trackEvent("deploy.set")
     }
 
     private async ensureDeployed() {
@@ -151,6 +158,7 @@ class ConnectedDevice {
     }
 
     private deployFail() {
+        this.trackEvent("deploy.fail")
         this.deployCmd = 0
         this.deployNumFail++
         this.deployTimeout =
@@ -292,7 +300,7 @@ class ConnectedDevice {
                     d.scriptId,
                     d.scriptVersion
                 )
-                const tmp = Buffer.from(body.compiled, "hex")
+                const tmp = Buffer.from(body.program.binary, "hex")
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
                     const hd = tmp.slice(0, 8).toString("hex")
@@ -358,6 +366,7 @@ class ConnectedDevice {
                             Date.now() - 20
                         )
                         console.log(telemetry)
+                        this.trackEvent("telemetry")
                         await insertTelemetry(this.id.partitionKey, telemetry)
                     } catch (e: any) {
                         this.log.error(`upload-bin: ${e.stack}`)
@@ -392,6 +401,7 @@ class ConnectedDevice {
         }
     }
     closed() {
+        this.trackEvent("closed")
         const f = this.unsub
         this.unsub = noop
         f()
@@ -405,6 +415,9 @@ class ConnectedDevice {
         if (this.lastMsg || Object.values(this.stats).some(v => v != 0)) {
             const statsUpdate = this.stats
             const lastMsg = this.lastMsg
+
+            this.trackEvent("tick", { measurements: statsUpdate })
+
             this.lastMsg = 0
             this.stats = zeroDeviceStats()
             await storage.updateDevice(this.id, d => {
@@ -418,6 +431,42 @@ class ConnectedDevice {
                     d.deployedHash = this.deployedHash.toString("hex")
             })
         }
+    }
+
+    private trackEvent(name: string, options?: Partial<EventTelemetry>) {
+        const dt = devsTelemetry()
+        const {
+            tagOverrides = {},
+            properties = {},
+            measurements = {},
+            ...rest
+        } = options || {}
+        const deviceProperties = {
+            deployedHash: this.deployedHash?.toString("hex"),
+        }
+        const deviceMeasurements = {
+            deployNumFail: this.deployNumFail,
+        }
+        const deviceTagOverrides = {
+            [contextTagKeys.sessionId]: this.sessionId,
+            [contextTagKeys.userAuthUserId]: this.id.rowKey,
+        }
+        dt.trackEvent({
+            ...rest,
+            properties: {
+                ...properties,
+                ...deviceProperties,
+            },
+            measurements: {
+                ...measurements,
+                ...deviceMeasurements,
+            },
+            tagOverrides: {
+                ...tagOverrides,
+                ...deviceTagOverrides,
+            },
+            name: `device.${name}`,
+        })
     }
 }
 
