@@ -116,6 +116,9 @@ class ConnectedDevice {
     private tickInt: any
     constructor(
         public readonly dev: DeviceInfo,
+        public readonly meta: {
+            ip: string
+        },
         public log: FastifyBaseLogger
     ) {}
 
@@ -504,6 +507,7 @@ class ConnectedDevice {
                 productName || productId?.toString(16),
             [contextTagKeys.deviceOSVersion]: runtimeVersion,
             [contextTagKeys.applicationVersion]: firmwareVersion,
+            [contextTagKeys.locationIp]: this.meta.ip,
         }
         dt.track(
             {
@@ -609,7 +613,6 @@ export async function wsskInit(server: FastifyInstance) {
             let cdev: ConnectedDevice
 
             let dev: DeviceInfo
-
             try {
                 dev = await getDeviceFromFullPath(req)
             } catch (e: any) {
@@ -618,6 +621,9 @@ export async function wsskInit(server: FastifyInstance) {
 
             cdev = new ConnectedDevice(
                 dev,
+                {
+                    ip: req.ip,
+                },
                 (log = server.log.child({ wssk: dev.rowKey }))
             )
 
