@@ -9,7 +9,7 @@ import {
     ToDeviceMessage,
     zeroDeviceStats,
 } from "./schema"
-import { displayName, runInBg, shortDeviceId } from "./util"
+import { displayName, runInBg, shortDeviceId, tryParseJSON } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
 import { insertTelemetry } from "./telemetry"
@@ -485,11 +485,25 @@ class ConnectedDevice {
     private track(telemetry: Telemetry, telemetryType: TelemetryType) {
         const dt = devsTelemetry()
         const { tagOverrides = {}, ...rest } = telemetry
+        const {
+            productId,
+            runtimeVersion,
+            firmwareVersion,
+            productName,
+            company,
+        } = tryParseJSON(this.dev.metaJSON)
+
         const devid = this.id.rowKey
         const deviceTagOverrides = {
             [contextTagKeys.sessionId]: this.sessionId,
             [contextTagKeys.userId]: devid,
             [contextTagKeys.userAuthUserId]: displayName(this.dev),
+            [contextTagKeys.deviceType]: "Embedded",
+            [contextTagKeys.deviceOEMName]: company,
+            [contextTagKeys.deviceModel]:
+                productName || productId?.toString(16),
+            [contextTagKeys.deviceOSVersion]: runtimeVersion,
+            [contextTagKeys.applicationVersion]: firmwareVersion,
         }
         dt.track(
             {

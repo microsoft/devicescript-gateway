@@ -70,3 +70,11 @@ export function displayName(info: DeviceInfo) {
     const devid = info.rowKey
     return `${info.name || devid} (${shortDeviceId(Buffer.from(devid, "hex"))})`
 }
+
+export function tryParseJSON(json: string, missing = "{}") {
+    try {
+        return JSON.parse(json || missing)
+    } catch {
+        return JSON.parse(missing)
+    }
+}

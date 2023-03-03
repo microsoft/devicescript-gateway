@@ -5,8 +5,8 @@ import {
     checkString,
     displayName,
     sanitizeDeviceId,
-    shortDeviceId,
     throwStatus,
+    tryParseJSON,
 } from "./util"
 import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
@@ -26,7 +26,7 @@ function externalDevice(info: DeviceInfo) {
         scriptVersion: info.scriptVersion,
         deployedHash: info.deployedHash,
         lastAct: info.lastAct ? new Date(info.lastAct).toISOString() : "",
-        meta: JSON.parse(info.metaJSON || "{}"),
+        meta: tryParseJSON(info.metaJSON),
         stats: storage.deviceStats(info),
     }
 }
