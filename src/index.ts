@@ -29,7 +29,6 @@ async function initAuth(server: FastifyInstance) {
         .map(s => s.trim())
         .filter(s => /^\w+:.+/.test(s))
 
-    console.log({ passwords: passwords.map(p => p.split(":", 1)).join(",") })
     server.register(fastifyBasicAuth, {
         validate: async (
             username: string,
