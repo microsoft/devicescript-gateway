@@ -328,7 +328,7 @@ class ConnectedDevice {
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
                     const hd = tmp.slice(0, 8).toString("hex")
-                    if (hd != "4a6163530a7e6a9a") {
+                    if (hd != "446576530a7e6a9a") {
                         this.warn(`compiled program bad magic ${hd}`)
                     } else this.setDeploy(tmp)
                 }
