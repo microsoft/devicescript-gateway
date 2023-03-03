@@ -117,6 +117,10 @@ const dinfo = JSON.parse((await $`az deployment group create \
 const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
+const eventHubNamespaceName = outputs.eventHubNamespaceName.value
+const storageConnectionStringSecretName = outputs.storageConnectionStringSecretName.value
+const eventHubConnectionStringSecretName = outputs.eventHubConnectionStringSecretName.value
+const passwordsSecretName = outputs.passwordsSecretName.value
 
 const homepage = `https://${webAppName}.azurewebsites.net/swagger/`
 
@@ -129,6 +133,10 @@ fs.writeFileSync("../.env",
 WEBSITE_SITE_NAME="${webAppName}"
 WEBSITE_HOSTNAME=0.0.0.0:7071
 DEVS_KEY_VAULT_NAME="${keyVaultName}"
+DEVS_EVENT_HUB_NAME="${eventHubNamespaceName}"
+DEVS_STORAGE_CONNECTION_STRING_SECRET="${storageConnectionStringSecretName}"
+DEVS_EVENT_HUB_CONNECTION_STRING_SECRET="${eventHubConnectionStringSecretName}"
+DEVS_PASSWORDS_SECRET="${passwordsSecretName}"
 DEVS_SWAGGER_URL="${homepage}"
 `, { encoding: "utf8" })
 

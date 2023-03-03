@@ -326,9 +326,25 @@
             "type": "string",
             "value": "[variables('keyVaultName')]"
         },
+        "eventHubNamespaceName": {
+            "type": "string",
+            "value": "[variables('eventHubNamespaceName')]"
+        },
         "webAppName": {
             "type": "string",
             "value": "[variables('webAppName')]"
+        },
+        "passwordsSecretName": {
+            "type": "string",
+            "value": "[variables('passwordsSecretName')]"
+        },
+        "storageConnectionStringSecretName": {
+            "type": "string",
+            "value": "[variables('storageConnectionStringSecretName')]"
+        },
+        "eventHubConnectionStringSecretName": {
+            "type": "string",
+            "value": "[variables('eventHubConnectionStringSecretName')]"
         }
     }
 }
