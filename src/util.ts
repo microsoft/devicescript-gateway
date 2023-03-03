@@ -1,4 +1,5 @@
 import { FastifyBaseLogger } from "fastify"
+import { DeviceInfo } from "./schema"
 
 export function idiv(a: number, b: number) {
     return ((a | 0) / (b | 0)) | 0
@@ -60,10 +61,12 @@ export function runInBg(log: FastifyBaseLogger, lbl: string, p: Promise<any>) {
     p.then(
         _ => {},
         err => {
-            log.error(
-                `error in ${lbl}: ${err.message} ${err.stack}`,
-                { err }
-            )
+            log.error(`error in ${lbl}: ${err.message} ${err.stack}`, { err })
         }
     )
+}
+
+export function displayName(info: DeviceInfo) {
+    const devid = info.rowKey
+    return `${info.name || devid} (${shortDeviceId(Buffer.from(devid, "hex"))})`
 }

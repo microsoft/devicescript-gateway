@@ -9,7 +9,7 @@ import {
     ToDeviceMessage,
     zeroDeviceStats,
 } from "./schema"
-import { runInBg } from "./util"
+import { displayName, runInBg, shortDeviceId } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
 import { insertTelemetry } from "./telemetry"
@@ -114,7 +114,14 @@ class ConnectedDevice {
     sendMsg = async (msg: Buffer) => {}
     private unsub = noop
     private tickInt: any
-    constructor(public id: DeviceId, public log: FastifyBaseLogger) {}
+    constructor(
+        public readonly dev: DeviceInfo,
+        public log: FastifyBaseLogger
+    ) {}
+
+    get id(): DeviceId {
+        return this.dev
+    }
 
     get path() {
         return fullDeviceId(this.id)
@@ -478,9 +485,11 @@ class ConnectedDevice {
     private track(telemetry: Telemetry, telemetryType: TelemetryType) {
         const dt = devsTelemetry()
         const { tagOverrides = {}, ...rest } = telemetry
+        const devid = this.id.rowKey
         const deviceTagOverrides = {
             [contextTagKeys.sessionId]: this.sessionId,
-            [contextTagKeys.userAuthUserId]: this.id.rowKey,
+            [contextTagKeys.userId]: devid,
+            [contextTagKeys.userAuthUserId]: displayName(this.dev),
         }
         dt.track(
             {
@@ -594,10 +603,7 @@ export async function wsskInit(server: FastifyInstance) {
             }
 
             cdev = new ConnectedDevice(
-                {
-                    partitionKey: dev.partitionKey,
-                    rowKey: dev.rowKey,
-                },
+                dev,
                 (log = server.log.child({ wssk: dev.rowKey }))
             )
 

@@ -3,6 +3,7 @@ import { FastifyInstance, FastifyRequest } from "fastify"
 import * as storage from "./storage"
 import {
     checkString,
+    displayName,
     sanitizeDeviceId,
     shortDeviceId,
     throwStatus,
@@ -12,11 +13,6 @@ import { wsskConnString } from "./wssk"
 import { fullDeviceId, pubToDevice, untilFromDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
 import { Telemetry } from "./telemetry"
-
-function displayName(info: DeviceInfo) {
-    const devid = info.rowKey
-    return `${info.name || devid} (${shortDeviceId(Buffer.from(devid, "hex"))})`
-}
 
 function externalDevice(info: DeviceInfo) {
     const conn = Date.now() - info.lastAct < 2 * 60 * 1000
