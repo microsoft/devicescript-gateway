@@ -10,7 +10,7 @@ export async function setup() {
         .setAutoCollectPerformance(true, true)
         .setAutoCollectExceptions(true)
         .setAutoCollectDependencies(true)
-        .setAutoCollectConsole(true, false)
+        .setAutoCollectConsole(true, true)
         .setUseDiskRetryCaching(true)
         .setAutoCollectPreAggregatedMetrics(true)
         .setSendLiveMetrics(false)
