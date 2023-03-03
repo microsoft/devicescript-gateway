@@ -42,6 +42,7 @@
         "appInsightsApiVersion": "2020-02-02",
         "webAppApiVersion": "2022-03-01",
         "keyVaultApiVersion": "2022-07-01",
+        "eventHubApiVersion": "2022-01-01-preview",
         "sku": "Free",
         "skuCode": "F1",
         "workerSize": "0",
@@ -49,23 +50,68 @@
         "numberOfWorkers": "1",
         "webAppAlwaysOn": false,
         "webAppLinuxFxVersion": "NODE|18-lts",
+        "eventHubSku": "Basic",
+        "eventHubPartitionCount": 1,
+        "eventHubMessageRetentionInDays": 1,
         "tenantId": "[subscription().tenantId]",
         "hostingPlanName": "[concat(variables('prefix'), 'hosting')]",
         "webAppName": "[concat(variables('prefix'), 'webapp')]",
         "appInsightsName": "[concat(variables('prefix'), 'appinsights')]",
         "storageAccountName": "[concat(variables('prefix'), 'storage')]",
         "keyVaultName": "[concat(variables('prefix'), 'keys')]",
+        "eventHubNamespaceName": "[concat(variables('prefix'), 'ns')]",
+        "eventHubAuthorizationRuleName": "gateway",
+        "telemetryEventHubName": "telemetry",
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "keyVaultId": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
         "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "appInsightsId": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
         "webAppId": "[resourceId('Microsoft.Web/sites', variables('webAppName'))]",
+        "eventHubNamespaceId": "[resourceId('Microsoft.EventHub/namespaces', variables('eventHubNamespaceName'))]",
+        "telemetryEventHubId": "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventHubNamespaceName'), variables('telemetryEventHubName'))]",
+        "eventHubAuthorizationRuleId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', variables('eventHubNamespaceName'), variables('eventHubAuthorizationRuleName'))]",
         "storageConnectionStringSecretName": "storageAccountConnectionString",
+        "eventHubConnectionStringSecretName": "eventHubAccountConnectionString",
         "adminToken": "[concat('admin:', parameters('adminPassword'))]",
         "passwordsSecretName": "passwords",
         "adminConnectionStringSecretName": "adminConnectionString"
     },
     "resources": [
+        //event hub
+        {
+            "type": "Microsoft.EventHub/namespaces",
+            "apiVersion": "[variables('eventHubApiVersion')]",
+            "name": "[variables('eventHubNamespaceName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "[variables('eventHubSku')]",
+                "tier": "[variables('eventHubSku')]",
+                "capacity": 1
+            },
+            "properties": {
+                "isAutoInflateEnabled": false,
+                "maximumThroughputUnits": 0
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/authorizationRules",
+            "apiVersion": "[variables('eventHubApiVersion')]",
+            "name": "[concat(variables('eventHubNamespaceName'), '/', variables('eventHubAuthorizationRuleName'))]",
+            "properties": {
+                "rights": ["Send"]
+            },
+            "dependsOn": ["[variables('eventHubNamespaceId')]"]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs",
+            "apiVersion": "[variables('eventHubApiVersion')]",
+            "name": "[concat(variables('eventHubNamespaceName'), '/', variables('telemetryEventHubName'))]",
+            "properties": {
+                "messageRetentionInDays": "[variables('eventHubMessageRetentionInDays')]",
+                "partitionCount": "[variables('eventHubPartitionCount')]"
+            },
+            "dependsOn": ["[variables('eventHubNamespaceId')]"]
+        },
         // storage
         {
             "type": "Microsoft.Storage/storageAccounts",
@@ -168,9 +214,7 @@
             "type": "Microsoft.KeyVault/vaults/secrets",
             "apiVersion": "[variables('keyVaultApiVersion')]",
             "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
-            "dependsOn": [
-                "[variables('keyVaultId')]"
-            ],
+            "dependsOn": ["[variables('keyVaultId')]"],
             "properties": {
                 "value": "[concat('WebAppName=', variables('webAppName') ,';AccountName=admin;AccountKey=', parameters('adminPassword'), ';EndPointSuffix=azurewebsites.net')]"
             }
@@ -185,6 +229,18 @@
             ],
             "properties": {
                 "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), variables('storageApiVersion')).keys[0].value,';EndpointSuffix=core.windows.net')]"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[concat(variables('keyVaultName'), '/', variables('eventHubConnectionStringSecretName'))]",
+            "dependsOn": [
+                "[variables('keyVaultId')]",
+                "[variables('eventHubAuthorizationRuleId')]"
+            ],
+            "properties": {
+                "value": "[reference(variables('eventHubAuthorizationRuleId')).primaryConnectionString]"
             }
         },
         // web
@@ -220,7 +276,9 @@
             },
             "dependsOn": [
                 "[variables('serverFarmId')]",
-                "[variables('appInsightsId')]"
+                "[variables('appInsightsId')]",
+                "[variables('eventHubAuthorizationRuleId')]",
+                "[variables('telemetryEventHubId')]"
             ],
             "identity": {
                 "type": "SystemAssigned"
@@ -245,6 +303,10 @@
                         {
                             "name": "DEVS_STORAGE_CONNECTION_STRING_SECRET",
                             "value": "[variables('storageConnectionStringSecretName')]"
+                        },
+                        {
+                            "name": "DEVS_EVENT_HUB_CONNECTION_STRING_SECRET",
+                            "value": "[variables('eventHubConnectionStringSecretName')]"
                         },
                         {
                             "name": "DEVS_PASSWORDS_SECRET",

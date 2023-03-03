@@ -1,5 +1,5 @@
 {
     "arrowParens": "avoid",
-    "semi": "es5",
+    "semi": false,
     "tabWidth": 4
 }
