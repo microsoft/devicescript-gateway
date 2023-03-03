@@ -34,7 +34,7 @@ export function generateOpenApiSpec() {
     const root = selfUrl()
     init(`${root}/api`, {
         title: webSiteName(),
-        description: "Developer DeviceScript Gateway",
+        description: "Development DeviceScript Gateway",
         version: "1.0",
     })
     basicAuth()
