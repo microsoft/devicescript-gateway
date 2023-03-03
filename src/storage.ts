@@ -10,6 +10,7 @@ import { randomBytes } from "crypto"
 import { promisify } from "util"
 import { gunzip, gzip } from "zlib"
 import { pubToDevice } from "./devutil"
+import { Telemetry, telemetrySinks, TelemetrySource } from "./telemetry"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
 import { createSecretClient } from "./vault"
@@ -37,8 +38,7 @@ export function webSiteName() {
 export function selfUrl() {
     // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
     const hostname = process.env["WEBSITE_HOSTNAME"]
-    if (!hostname)
-        throw new Error("WEBSITE_HOSTNAME not configured")
+    if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
     const protocol = /^(0\.|localhost)/i.test(hostname) ? "http" : "https"
     return `${protocol}://${hostname}`
 }
@@ -83,6 +83,8 @@ export async function setup() {
     await scriptVersionsTable.createTable()
     await telemetryTable.createTable()
     await scriptsBlobs.createIfNotExists()
+
+    telemetrySinks.push(insertTelemetry)
 
     if (false) {
         await scriptsBlobs.createIfNotExists({ access: "blob" })
@@ -471,22 +473,6 @@ export async function getScriptVersions(scr: ScriptHeader) {
     )
 }
 
-export interface TelemetrySource {
-    brainId: string // "161f314155de245b"
-    sensorId: string // "260f3e4155de245b"
-    srv: string // "temperature"
-    srvIdx: number // typically 0
-}
-
-export interface Telemetry extends TelemetrySource {
-    ms: number // milliseconds since epoch aka Date.now()
-    avg: number // 22.2 C, etc
-    min?: number
-    max?: number
-    nsampl?: number // number of samples
-    dur?: number // sampling time is from [ms-dur, ms]
-}
-
 export type TelemetryQuery = Partial<TelemetrySource> & {
     start?: number
     stop?: number
@@ -587,7 +573,7 @@ export async function queryTelemetry(part: string, query: TelemetryQuery) {
     return res
 }
 
-export async function insertTelemetry(part: string, entries: Telemetry[]) {
+async function insertTelemetry(part: string, entries: Telemetry[]) {
     let acc: TransactionAction[] = []
     for (const e of entries) {
         const actions = keysOfTelemetry(e).map(

@@ -240,7 +240,7 @@
                 "[variables('eventHubAuthorizationRuleId')]"
             ],
             "properties": {
-                "value": "[listKeys(variables('eventHubAuthorizationRuleId'), variables('eventHubApiVersion')).keys[0].primaryConnectionString]"
+                "value": "[listKeys(variables('eventHubAuthorizationRuleId'), variables('eventHubApiVersion')).primaryConnectionString]"
             }
         },
         // web
@@ -299,6 +299,10 @@
                         {
                             "name": "DEVS_KEY_VAULT_NAME",
                             "value": "[variables('keyVaultName')]"
+                        },
+                        {
+                            "name": "DEVS_EVENT_HUB_NAME",
+                            "value": "[variables('eventHubNamespaceName')]"
                         },
                         {
                             "name": "DEVS_STORAGE_CONNECTION_STRING_SECRET",
