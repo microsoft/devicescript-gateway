@@ -125,7 +125,7 @@
             "kind": "StorageV2",
             "properties": {
                 "serverFarmId": "[variables('serverFarmId')]",
-                "supportsHttpsTrafficOnly": true,
+                "supportsHttpsTrafficOnly": false,
                 "isHnsEnabled": true
             }
         },
