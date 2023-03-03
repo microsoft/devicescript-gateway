@@ -8,6 +8,7 @@
     "dist/**"
   ],
   "scripts": {
+    "connection": "cd infra && zx ./connection.mjs",
     "provision": "cd infra && zx ./provision.mjs",
     "unprovision": "cd infra && zx ./unprovision.mjs",
     "debug": "cd infra && zx ./debug.mjs",
