@@ -441,8 +441,6 @@ class ConnectedDevice {
             const statsUpdate = this.stats
             const lastMsg = this.lastMsg
 
-            this.trackEvent("tick", { measurements: statsUpdate })
-
             this.lastMsg = 0
             this.stats = zeroDeviceStats()
             await storage.updateDevice(this.id, d => {
