@@ -11,6 +11,7 @@
     "connection": "cd infra && zx ./connection.mjs",
     "provision": "cd infra && zx ./provision.mjs",
     "unprovision": "cd infra && zx ./unprovision.mjs",
+    "launch": "cd infra && zx ./launch.mjs",
     "debug": "cd infra && zx ./debug.mjs",
     "build": "tsc",
     "watch": "tsc -w",
@@ -46,6 +47,7 @@
     "@types/ws": "^8.5.3",
     "dotenv": "^16.0.3",
     "libsodium-wrappers": "^0.7.11",
+    "open": "^8.4.2",
     "typescript": "^4.0.0",
     "xmlbuilder2": "^3.0.2",
     "zx": "^7.2.0"
