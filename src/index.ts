@@ -118,11 +118,6 @@ async function main() {
         done()
     })
 
-    console.log({ SERVER_PORT: process.env["SERVER_PORT"] })
-    console.log({ PORT: process.env["PORT"] })
-    console.log({ WEBSITE_HOSTNAME: process.env["WEBSITE_HOSTNAME"] })
-    console.log({ WEBSITE_PLATFORM_VERSION: process.env["WEBSITE_PLATFORM_VERSION"]})
-
     await storage.setup()
     await initAuth(server)
     await wsskInit(server)
