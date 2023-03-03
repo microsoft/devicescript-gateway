@@ -1,10 +1,7 @@
-import appInsights from "applicationinsights"
+import * as appInsights from "applicationinsights"
 
 export async function setup() {
-    appInsights
-        .setup()
-        .start();
-
+    appInsights.setup().start()
     const client = appInsights.defaultClient
     return client
 }
