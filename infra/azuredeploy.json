@@ -293,8 +293,8 @@
                     "alwaysOn": "[variables('webAppAlwaysOn')]",
                     "appSettings": [
                         {
-                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-                            "value": "[reference(variables('appInsightsName'), variables('appInsightsApiVersion')).InstrumentationKey]"
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(variables('appInsightsName'), variables('appInsightsApiVersion')).ConnectionString]"
                         },
                         {
                             "name": "DEVS_KEY_VAULT_NAME",
