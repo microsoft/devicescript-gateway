@@ -11,11 +11,7 @@ export async function setup() {
     const connStr = connStrSecret.value
     if (!connStr) throw new Error("event hub connection string is empty")
 
-    const eventHubName = process.env["DEVS_EVENT_HUB_NAME"]
-    if (!eventHubName) throw new Error("event hub name is empty")
-
-    const producer = new EventHubProducerClient(connStr, eventHubName)
-
+    const producer = new EventHubProducerClient(connStr, "telemetry")
     telemetrySinks.push(async (part, entries) => {
         // Prepare a batch of three events.
         const batch = await producer.createBatch()
