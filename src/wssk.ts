@@ -110,9 +110,7 @@ class ConnectedDevice {
     sendMsg = async (msg: Buffer) => {}
     private unsub = noop
     private tickInt: any
-    constructor(public id: DeviceId, public log: FastifyBaseLogger) {
-        this.trackEvent("open")
-    }
+    constructor(public id: DeviceId, public log: FastifyBaseLogger) {}
 
     get path() {
         return fullDeviceId(this.id)
@@ -321,6 +319,7 @@ class ConnectedDevice {
     }
 
     async connected() {
+        this.trackEvent("connect")
         this.unsub = await subToDevice(this.id, this.toDevice.bind(this))
         this.tickInt = setInterval(() => {
             runInBg(this.log, "tick", this.tick())
@@ -442,10 +441,10 @@ class ConnectedDevice {
             ...rest
         } = options || {}
         const deviceProperties = {
-            deployedHash: this.deployedHash?.toString("hex"),
+            deployedHash: this.deployedHash?.toString("hex") || "",
         }
         const deviceMeasurements = {
-            deployNumFail: this.deployNumFail,
+            deployNumFail: this.deployNumFail || 0,
         }
         const deviceTagOverrides = {
             [contextTagKeys.sessionId]: this.sessionId,
