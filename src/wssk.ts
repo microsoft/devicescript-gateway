@@ -322,6 +322,7 @@ class ConnectedDevice {
                     d.scriptId,
                     d.scriptVersion
                 )
+                console.log({ body })
                 const tmp = Buffer.from(body.program.binary, "hex")
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
