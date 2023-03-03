@@ -1,6 +1,7 @@
 import * as appInsights from "applicationinsights"
 import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
 
+// telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
 export async function setup() {
     appInsights

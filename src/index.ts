@@ -18,6 +18,7 @@ import { createSecretClient } from "./vault"
 import { generateOpenApiSpec } from "./swagger/openapi"
 
 async function initAuth(server: FastifyInstance) {
+    console.log(`starting gateway...`)
     const secrets = createSecretClient()
     const passwordSecretName =
         process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
@@ -151,6 +152,7 @@ async function main() {
     const host = "0.0.0.0"
     server.listen({ port, host }, err => {
         if (err) {
+            appinsights.serverTelemetry().trackException({ exception: err })
             console.error(err)
             process.exit(1)
         }
