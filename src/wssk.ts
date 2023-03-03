@@ -14,7 +14,11 @@ import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
 import { insertTelemetry } from "./telemetry"
 import { contextTagKeys, devsTelemetry } from "./appinsights"
-import { EventTelemetry } from "applicationinsights/out/Declarations/Contracts"
+import {
+    EventTelemetry,
+    Telemetry,
+    TelemetryType,
+} from "applicationinsights/out/Declarations/Contracts"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -137,6 +141,7 @@ class ConnectedDevice {
     warn(msg: string) {
         this.notify({ type: "warning", message: msg })
         this.log.warn(msg)
+        this.trackWarning(msg)
     }
 
     private setDeploy(buf: Buffer) {
@@ -181,13 +186,17 @@ class ConnectedDevice {
                     const isSecondTry = this.deployedHash == this.deployHash
                     this.deployedHash = payload.slice(0, 32)
                     if (this.deployedHash.equals(this.deployHash)) {
-                        if (isSecondTry) this.log.info("re-check hash OK")
-                        else
+                        if (isSecondTry) {
+                            this.trackEvent("deploy.secondtry")
+                            this.log.info("re-check hash OK")
+                        } else {
+                            this.trackEvent("deploy.same")
                             this.log.info(
                                 `already have ${this.deployHash.toString(
                                     "hex"
                                 )}`
                             )
+                        }
                         this.deployCmd = 0
                         this.deployNumFail = 0
                         this.deployTimeout = 0
@@ -196,6 +205,7 @@ class ConnectedDevice {
                             this.warn("deploy hash check failed")
                             this.deployFail()
                         } else {
+                            this.trackEvent("deploy.start")
                             await this.sendCmd(
                                 (this.deployCmd = 0x94),
                                 encodeU32Array([this.deployBuffer.length])
@@ -219,6 +229,7 @@ class ConnectedDevice {
                         this.deployPtr += sz
                         await this.sendCmd((this.deployCmd = 0x95), chunk)
                     } else {
+                        this.trackEvent("deploy.success")
                         this.log.debug(`finish deploy ${this.deployPtr} bytes`)
                         await this.sendCmd((this.deployCmd = 0x96))
                     }
@@ -244,6 +255,9 @@ class ConnectedDevice {
     private async toDevice(msg: ToDeviceMessage) {
         switch (msg.type) {
             case "method":
+                this.trackEvent("method", {
+                    properties: { methodName: msg.methodName },
+                })
                 this.stats.c2d++
                 let payload = msg.payload
                 if (typeof payload == "number") payload = [payload]
@@ -433,39 +447,51 @@ class ConnectedDevice {
     }
 
     private trackEvent(name: string, options?: Partial<EventTelemetry>) {
-        const dt = devsTelemetry()
-        const {
-            tagOverrides = {},
-            properties = {},
-            measurements = {},
-            ...rest
-        } = options || {}
+        const { properties = {}, measurements = {}, ...rest } = options || {}
         const deviceProperties = {
             deployedHash: this.deployedHash?.toString("hex") || "",
         }
         const deviceMeasurements = {
             deployNumFail: this.deployNumFail || 0,
         }
+        this.track(
+            <EventTelemetry>{
+                ...rest,
+                properties: {
+                    ...properties,
+                    ...deviceProperties,
+                },
+                measurements: {
+                    ...measurements,
+                    ...deviceMeasurements,
+                },
+                name: `device.${name}`,
+            },
+            TelemetryType.Event
+        )
+    }
+
+    private trackWarning(message: string) {
+        this.trackEvent("warning", { properties: { message } })
+    }
+
+    private track(telemetry: Telemetry, telemetryType: TelemetryType) {
+        const dt = devsTelemetry()
+        const { tagOverrides = {}, ...rest } = telemetry
         const deviceTagOverrides = {
             [contextTagKeys.sessionId]: this.sessionId,
             [contextTagKeys.userAuthUserId]: this.id.rowKey,
         }
-        dt.trackEvent({
-            ...rest,
-            properties: {
-                ...properties,
-                ...deviceProperties,
+        dt.track(
+            {
+                ...rest,
+                tagOverrides: {
+                    ...tagOverrides,
+                    ...deviceTagOverrides,
+                },
             },
-            measurements: {
-                ...measurements,
-                ...deviceMeasurements,
-            },
-            tagOverrides: {
-                ...tagOverrides,
-                ...deviceTagOverrides,
-            },
-            name: `device.${name}`,
-        })
+            telemetryType
+        )
     }
 }
 
