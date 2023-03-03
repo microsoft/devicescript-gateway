@@ -9,6 +9,7 @@ import fastifyStatic from "@fastify/static"
 
 import * as storage from "./storage"
 import * as eventhub from "./eventhub"
+import * as appinsights from "./appinsights"
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
@@ -62,6 +63,8 @@ window.onload = function () {
 `
 
 async function main() {
+    const ai = await appinsights.setup()
+
     const server = fastify({
         disableRequestLogging: true,
         maxParamLength: 2048,
