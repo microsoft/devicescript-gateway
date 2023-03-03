@@ -322,6 +322,10 @@
         }
     ],
     "outputs": {
+        "appInsightsConnectionString": {
+            "type": "string",
+            "value": "[reference(variables('appInsightsName'), variables('appInsightsApiVersion')).ConnectionString]"
+        },
         "keyVaultName": {
             "type": "string",
             "value": "[variables('keyVaultName')]"

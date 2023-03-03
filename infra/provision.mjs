@@ -121,6 +121,7 @@ const eventHubNamespaceName = outputs.eventHubNamespaceName.value
 const storageConnectionStringSecretName = outputs.storageConnectionStringSecretName.value
 const eventHubConnectionStringSecretName = outputs.eventHubConnectionStringSecretName.value
 const passwordsSecretName = outputs.passwordsSecretName.value
+const appInsightsConnectionString = outputs.appInsightsConnectionString.value
 
 const homepage = `https://${webAppName}.azurewebsites.net/swagger/`
 
@@ -129,7 +130,8 @@ echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 // generate local resource file
 // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
 fs.writeFileSync("../.env",
-    `WEBSITE_RESOURCE_GROUP="${resourceGroup}"
+    `APPLICATIONINSIGHTS_CONNECTION_STRING="${appInsightsConnectionString}"
+WEBSITE_RESOURCE_GROUP="${resourceGroup}"
 WEBSITE_SITE_NAME="${webAppName}"
 WEBSITE_HOSTNAME=0.0.0.0:7071
 DEVS_KEY_VAULT_NAME="${keyVaultName}"
