@@ -26,6 +26,10 @@ export async function setup() {
     })
 }
 
+export function serverTelemetry(): appInsights.TelemetryClient {
+    return appInsights.defaultClient
+}
+
 export function devsTelemetry(): appInsights.TelemetryClient {
     return _devsTelemetry
 }

@@ -13,7 +13,7 @@ import { displayName, runInBg, shortDeviceId, tryParseJSON } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
 import { insertTelemetry } from "./telemetry"
-import { contextTagKeys, devsTelemetry } from "./appinsights"
+import { contextTagKeys, devsTelemetry, serverTelemetry } from "./appinsights"
 import {
     EventTelemetry,
     Telemetry,
@@ -327,12 +327,12 @@ class ConnectedDevice {
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
                     const hd = tmp.slice(0, 8).toString("hex")
-                    if (hd != "4a6163530a7e6a9a")
+                    if (hd != "4a6163530a7e6a9a") {
                         this.warn(`compiled program bad magic ${hd}`)
-                    else this.setDeploy(tmp)
+                    } else this.setDeploy(tmp)
                 }
             } catch (e: any) {
-                this.warn(`can't get script body ${e.stack}`)
+                serverTelemetry().trackException({ exception: e })
             }
         }
 
@@ -394,6 +394,7 @@ class ConnectedDevice {
                         await insertTelemetry(this.id.partitionKey, telemetry)
                     } catch (e: any) {
                         this.log.error(`upload-bin: ${e.stack}`)
+                        serverTelemetry().trackException({ exception: e })
                     }
                     await this.notify({
                         type: "uploadBin",
@@ -708,6 +709,7 @@ export async function wsskInit(server: FastifyInstance) {
                     }
                 } catch (e: any) {
                     log.error(`message handler: ${e.stack}`)
+                    serverTelemetry().trackException({ exception: e })
                 }
             })
 
