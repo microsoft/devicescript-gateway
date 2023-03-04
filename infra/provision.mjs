@@ -7,6 +7,8 @@ import { readFileSync } from "fs"
 import { create } from "xmlbuilder2"
 import sodium from "libsodium-wrappers"
 
+$.verbose = false
+
 const GITHUB_API_VERSION = '2022-11-28'
 
 echo(`DeviceScript Gateway configuration.`)
@@ -19,13 +21,26 @@ const pkg = JSON.parse(readFileSync("../package.json", { encoding: "utf8" }))
 const gatewayVersion = pkg.version
 echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
+// resolve subscript
+let subscription = JSON.parse((await $`az account show`).stdout)
+if (true) {//&& !subscription?.isDefault) {
+    echo(chalk.blue(`Searching for subscriptions...`))
+    const subscriptions = JSON.parse((await $`az account list`).stdout)
+    const name = await question("Pick a subscription: ", { choices: subscriptions.map(s => s.name) })
+    subscription = subscriptions.find(s => s.name === name)
+    if (!subscription)
+        throw "no subscription given"
+}
+const subscriptionId = subscription.id
+echo(chalk.blue(`subscription: ${subscription.name} (${subscriptionId})`))
+
 const resourceGroup = process.env["DEVS_RESOURCE_GROUP"] || await question(chalk.blue("Pick a name for the new resource group (env DEVS_RESOURCE_GROUP): "))
 if (!resourceGroup) throw "no resource group name given"
 
 let resourceLocation = process.env["DEVS_LOCATION"]
 if (!resourceLocation) {
-    echo(chalk.blue("Searching for available Azure locations..."))
-    const locations = JSON.parse((await $`az account list-locations`).stdout).map(loc => loc.name)
+    echo(chalk.blue("Searching for Azure locations..."))
+    const locations = JSON.parse((await $`az account list-locations --subscription ${subscriptionId}`).stdout).map(loc => loc.name)
     echo(`locations: ${locations.join(", ")}`)
     resourceLocation = await question(chalk.blue("Pick a region location for the resource group (env DEVS_LOCATION): "), { choices: locations })
 }
@@ -55,7 +70,7 @@ if (octokit) {
 
 // check if resource group already exists
 echo(`Searching for existing resource group ${resourceGroup}...`)
-const exists = JSON.parse((await $`az group list --query "[?name=='${resourceGroup}']"`).stdout)
+const exists = JSON.parse((await $`az group list --subscription ${subscriptionId} --query "[?name=='${resourceGroup}']"`).stdout)
 if (exists?.length) {
     const config = process.env["DEVS_DELETE_EXISTING_RESOURCE_GROUP"] || await question(chalk.red("Resource group already exists, delete? (yes/no, env DEVS_DELETE_EXISTING_RESOURCE_GROUP): "), { choices: ["yes", "no"] })
     if (config !== "yes") throw "resource group already exists"
@@ -66,7 +81,7 @@ if (exists?.length) {
 
 // check keyvaults already exist
 echo(chalk.blue(`Looking for deleting keyvaults that might name clash...`))
-const deletevaults = JSON.parse((await $`az keyvault list-deleted`).stdout)
+const deletevaults = JSON.parse((await $`az keyvault list-deleted --subscription ${subscriptionId}`).stdout)
 const deletedvault = deletevaults?.find(v => v.name === `${namePrefix.toLowerCase()}keys`)
 if (deletedvault)
     throw `deleted keyvault ${deletedvault.name} already exists`
@@ -102,7 +117,7 @@ fs.writeFileSync(parameterFile, JSON.stringify({
     }
 }, null, 4), { encoding: "utf8" })
 
-const rsinfo = JSON.parse((await $`az group create --name ${resourceGroup} --location ${resourceLocation}`).stdout)
+const rsinfo = JSON.parse((await $`az group create --subscription ${subscriptionId} --name ${resourceGroup} --location ${resourceLocation}`).stdout)
 
 echo(chalk.blue(`Resource group: ${rsinfo.name}, ${rsinfo.id}`))
 
@@ -111,6 +126,7 @@ const deploymentName = "devicescript"
 const templateFile = "azuredeploy.json"
 const dinfo = JSON.parse((await $`az deployment group create \
   --name ${deploymentName} \
+  --subscription ${subscriptionId} \
   --resource-group ${resourceGroup} \
   --template-file ${templateFile} \
   --parameters ${parameterFile}`).stdout)
@@ -131,6 +147,7 @@ echo(chalk.blue(`Deployment: web app ${webAppName}, vault ${keyVaultName}`))
 // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
 fs.writeFileSync("../.env",
     `APPLICATIONINSIGHTS_CONNECTION_STRING="${appInsightsConnectionString}"
+WEBSITE_OWNER_NAME=${subscriptionId}
 WEBSITE_RESOURCE_GROUP="${resourceGroup}"
 WEBSITE_SITE_NAME="${webAppName}"
 WEBSITE_HOSTNAME=0.0.0.0:7071
@@ -145,7 +162,7 @@ DEVS_SWAGGER_URL="${homepage}"
 if (octokit) {
     // download publish profile
     echo(chalk.blue('Download publish profile...'))
-    const pb = JSON.parse((await $`az webapp deployment list-publishing-profiles --name ${webAppName} --resource-group ${resourceGroup}`).stdout)
+    const pb = JSON.parse((await $`az webapp deployment list-publishing-profiles --subscription ${subscriptionId} --name ${webAppName} --resource-group ${resourceGroup}`).stdout)
     const zpd = pb?.find(o => o.publishMethod === "ZipDeploy")
     if (!zpd) throw "failed to fetch zip deploy publishing profile"
 
@@ -200,7 +217,7 @@ if (octokit) {
 }
 
 // download generate admin connection string
-const connString = JSON.parse((await $`az keyvault secret show --vault-name ${keyVaultName} --name adminConnectionString`).stdout).value
+const connString = JSON.parse((await $`az keyvault secret show --subscription ${subscriptionId} --vault-name ${keyVaultName} --name adminConnectionString`).stdout).value
 
 // final notes
 echo(chalk.blue(`Azure resources and local development configured successfully`))
