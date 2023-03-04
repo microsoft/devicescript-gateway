@@ -39,10 +39,18 @@ if (!resourceGroup) throw "no resource group name given"
 
 let resourceLocation = process.env["DEVS_LOCATION"]
 if (!resourceLocation) {
-    echo(chalk.blue("Searching for Azure locations..."))
-    const locations = JSON.parse((await $`az account list-locations --subscription ${subscriptionId}`).stdout).map(loc => loc.name)
-    echo(`locations: ${locations.join(", ")}`)
-    resourceLocation = await question(chalk.blue("Pick a region location for the resource group (env DEVS_LOCATION): "), { choices: locations })
+    echo(chalk.blue("Searching for available Azure locations..."))
+    const locations = JSON.parse(
+        (await $`az account list-locations --subscription ${subscriptionId}`).stdout
+    ).filter(l => !l.name.includes("stage"))
+    locations.sort((a, b) =>
+        a.regionalDisplayName < b.regionalDisplayName ? -1 : 1
+    )
+    for (const loc of locations)
+        echo(`${loc.name.padEnd(20)}  ${loc.regionalDisplayName}`)
+    resourceLocation = await question(chalk.blue("Pick a region location for the resource group (env DEVS_LOCATION): "), {
+        choices: locations.map(l => l.name)
+    })
 }
 if (!resourceLocation)
     throw "no location provided"
