@@ -58,6 +58,7 @@ export function delay(ms: number) {
 }
 
 export function runInBg(log: FastifyBaseLogger, lbl: string, p: Promise<any>) {
+    log.debug(`bg ${lbl}`)
     p.then(
         _ => {},
         err => {

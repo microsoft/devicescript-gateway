@@ -9,11 +9,14 @@ export interface DeviceMessage extends MessageBase {
     deviceId?: string
 }
 
-export interface MethodCallToDevice extends DeviceMessage {
-    type: "method"
-    methodName: string
-    rid: number
-    payload: any
+export interface SendJsonToDevice extends DeviceMessage {
+    type: "sendJson"
+    value: any
+}
+
+export interface SendBinToDevice extends DeviceMessage {
+    type: "sendBin"
+    payload64: string
 }
 
 export interface FrameToDevice extends DeviceMessage {
@@ -26,10 +29,9 @@ export interface DeployToDevice extends DeviceMessage {
     scriptId: string
 }
 
-export interface JacsUploadFromDevice extends DeviceMessage {
-    type: "jacsUpload"
-    label: string
-    values: number[]
+export interface UploadJsonFromDevice extends DeviceMessage {
+    type: "uploadJson"
+    value: any
 }
 
 export interface UploadBinFromDevice extends DeviceMessage {
@@ -40,13 +42,6 @@ export interface UploadBinFromDevice extends DeviceMessage {
 export interface WarningFromDevice extends DeviceMessage {
     type: "warning"
     message: string
-}
-
-export interface MethodResultFromDevice extends DeviceMessage {
-    type: "methodRes"
-    rid: number
-    statusCode: number
-    payload: any
 }
 
 export interface PingToDevice extends DeviceMessage {
@@ -82,7 +77,8 @@ export interface FrameFromDevice extends DeviceMessage {
 }
 
 export type ToDeviceMessage =
-    | MethodCallToDevice
+    | SendBinToDevice
+    | SendJsonToDevice
     | DeployToDevice
     | FrameToDevice
     | SetForwardingToDevice
@@ -90,8 +86,7 @@ export type ToDeviceMessage =
     | DeviceUpdateToDevice
 
 export type FromDeviceMessage =
-    | JacsUploadFromDevice
-    | MethodResultFromDevice
+    | UploadJsonFromDevice
     | FrameFromDevice
     | UploadBinFromDevice
     | PongFromDevice

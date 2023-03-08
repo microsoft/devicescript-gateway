@@ -14,6 +14,7 @@ import { Telemetry, telemetrySinks, TelemetrySource } from "./telemetry"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
 import { createSecretClient } from "./vault"
+import { DebugInfo } from "./interop"
 
 const suff = "4"
 
@@ -26,6 +27,10 @@ let scriptsBlobs: ContainerClient
 let telemetryTable: TableClient
 
 export const defaultPartition = "main"
+
+export interface ScriptBody {
+    program: DebugInfo
+}
 
 export function webSiteName() {
     const siteName = process.env["WEBSITE_SITE_NAME"]
@@ -286,7 +291,7 @@ export interface ScriptHeader {
 }
 
 export interface FullScript extends ScriptHeader {
-    body: {}
+    body: ScriptBody
 }
 
 function toUserScript(
@@ -341,7 +346,7 @@ function versionKey(version: number) {
     return 1e6 - version + ""
 }
 
-async function createScriptSnapshot(scriptId: string, ver: number, body: {}) {
+async function createScriptSnapshot(scriptId: string, ver: number, body: ScriptBody) {
     const headId = versionKey(ver)
     const blobId = scriptId + "/" + headId
 
@@ -365,7 +370,7 @@ async function createScriptSnapshot(scriptId: string, ver: number, body: {}) {
 export interface ScriptProperties {
     name?: string
     meta?: {}
-    body?: {}
+    body?: ScriptBody
 }
 
 export async function createScript(part: string, props: ScriptProperties) {
@@ -464,7 +469,7 @@ async function downloadJsonBlob(client: ContainerClient, id: string) {
 
 export async function getScriptBody(scriptId: string, ver: number) {
     const id = scriptId + "/" + versionKey(ver)
-    return await downloadJsonBlob(scriptsBlobs, id)
+    return (await downloadJsonBlob(scriptsBlobs, id)) as ScriptBody
 }
 
 export async function getScriptVersions(scr: ScriptHeader) {

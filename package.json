@@ -15,7 +15,7 @@
     "debug": "cd infra && zx ./debug.mjs",
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "local": "node dev.mjs",
     "dev": "yarn build && yarn local",
     "zip": "yarn build && rm -f pkg.zip && 7z a pkg.zip dist/ node_modules/ power-connector/ package.json -x!node_modules/typescript -x!node_modules/@types -xr!test",

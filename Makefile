@@ -1,3 +1,3 @@
 all:
 	yarn build
-	node run.js
+	node dev.mjs

@@ -36,8 +36,8 @@ export async function initScriptRoutes(server: FastifyInstance) {
 
     server.put("/scripts/:scriptId/body", async req => {
         const scr = await getScript(req)
-        verifyBody(req.body)
-        return storage.updateScript(scr, { body: req.body })
+        if (verifyBody(req.body))
+            await storage.updateScript(scr, { body: req.body })
     })
 
     server.get("/scripts/:scriptId/versions", async req => {
@@ -52,11 +52,15 @@ export async function initScriptRoutes(server: FastifyInstance) {
         return await storage.getScriptBody(scr.id, scr.version)
     })
 
-    function verifyBody(body: {}) {
+    function verifyBody(body: {}): body is storage.ScriptBody {
         if (typeof body != "object" || Array.isArray(body))
             throwStatus(412, "invalid body type")
         if (JSON.stringify(body).length > 5 * 1024 * 1024)
             throwStatus(413, "body too large")
+        const b = body as storage.ScriptBody
+        if (!b.program || typeof b.program?.binary?.hex != "string")
+            throwStatus(418, "invalid body format")
+        return true
     }
 
     function getScriptData(req: FastifyRequest) {

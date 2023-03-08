@@ -9,16 +9,15 @@ import {
     ToDeviceMessage,
     zeroDeviceStats,
 } from "./schema"
-import { displayName, runInBg, shortDeviceId, tryParseJSON } from "./util"
+import { displayName, runInBg, tryParseJSON } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
-import { parseJdbrMessage, toTelemetry } from "./jdbr-binfmt"
-import { insertTelemetry } from "./telemetry"
 import { contextTagKeys, devsTelemetry, serverTelemetry } from "./appinsights"
 import {
     EventTelemetry,
     Telemetry,
     TelemetryType,
 } from "applicationinsights/out/Declarations/Contracts"
+import { WsskCmd, WsskDataType } from "./interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -29,35 +28,7 @@ const JD_AES_BLOCK_BYTES = 16
 
 const JD_ENCSOCK_MAGIC = 0xcee428ca
 
-export enum CloudAdapterCmd {
-    /**
-     * Upload a labelled tuple of values to the cloud.
-     * The tuple will be automatically tagged with timestamp and originating device.
-     *
-     * ```
-     * const [label, value] = jdunpack<[string, number[]]>(buf, "z f64[]")
-     * ```
-     */
-    Upload = 0x80,
-
-    /**
-     * Argument: payload bytes. Upload a binary message to the cloud.
-     *
-     * ```
-     * const [payload] = jdunpack<[Uint8Array]>(buf, "b")
-     * ```
-     */
-    UploadBin = 0x81,
-
-    /**
-     * Should be called when it finishes handling a `cloud_command`.
-     *
-     * ```
-     * const [seqNo, status, result] = jdunpack<[number, CloudAdapterCommandStatus, number[]]>(buf, "u32 u32 f64[]")
-     * ```
-     */
-    AckCloudCommand = 0x83,
-}
+const MAX_PAYLOAD_SIZE = 230 // for to-device JSON and binary messages
 
 function toDoubleArray(buf: Buffer) {
     const r: number[] = []
@@ -107,7 +78,7 @@ class ConnectedDevice {
     private deployBuffer: Buffer
     private deployHash: Buffer
     private deployPtr = 0
-    private deployCmd = 0
+    private deployCmd: WsskCmd = 0
 
     private deployedHash: Buffer
 
@@ -169,7 +140,7 @@ class ConnectedDevice {
         this.deployPtr = 0
         this.deployFail() // set timeout
         this.log.debug(`deploying ${this.deployHash.toString("hex")}`)
-        await this.sendCmd((this.deployCmd = 0x93))
+        await this.sendDeployCmd(WsskCmd.GetHash)
     }
 
     private deployFail() {
@@ -180,10 +151,19 @@ class ConnectedDevice {
             Date.now() + (2 + Math.min(this.deployNumFail, 20)) * 10 * 1000
     }
 
+    private isDeployCmd(cmd: number) {
+        return [
+            WsskCmd.GetHash,
+            WsskCmd.DeployStart,
+            WsskCmd.DeployWrite,
+            WsskCmd.DeployFinish,
+        ].includes(cmd)
+    }
+
     private async deployStep(cmd: number, payload: Buffer) {
         if (
-            cmd == 0xff ||
-            (0x93 <= cmd && cmd <= 0x96 && cmd != this.deployCmd)
+            cmd == WsskCmd.Error ||
+            (this.isDeployCmd(cmd) && cmd != this.deployCmd)
         ) {
             if (this.deployCmd) {
                 this.warn(`deploy failed: ${cmd}`)
@@ -194,7 +174,7 @@ class ConnectedDevice {
             return true
         } else if (cmd == this.deployCmd) {
             switch (cmd) {
-                case 0x93: {
+                case WsskCmd.GetHash: {
                     const isSecondTry = this.deployedHash == this.deployHash
                     this.deployedHash = payload.slice(0, 32)
                     if (this.deployedHash.equals(this.deployHash)) {
@@ -218,16 +198,16 @@ class ConnectedDevice {
                             this.deployFail()
                         } else {
                             this.trackEvent("deploy.start")
-                            await this.sendCmd(
-                                (this.deployCmd = 0x94),
+                            await this.sendDeployCmd(
+                                WsskCmd.DeployStart,
                                 encodeU32Array([this.deployBuffer.length])
                             )
                         }
                     }
                     break
                 }
-                case 0x94:
-                case 0x95: {
+                case WsskCmd.DeployStart:
+                case WsskCmd.DeployWrite: {
                     let sz = this.deployBuffer.length - this.deployPtr
                     if (sz > 0) {
                         sz = Math.min(sz, bytecodeMaxPkt)
@@ -239,15 +219,15 @@ class ConnectedDevice {
                             `deploy at ${this.deployPtr}/${this.deployBuffer.length}, ${sz} bytes`
                         )
                         this.deployPtr += sz
-                        await this.sendCmd((this.deployCmd = 0x95), chunk)
+                        await this.sendDeployCmd(WsskCmd.DeployWrite, chunk)
                     } else {
                         this.trackEvent("deploy.success")
                         this.log.debug(`finish deploy ${this.deployPtr} bytes`)
-                        await this.sendCmd((this.deployCmd = 0x96))
+                        await this.sendDeployCmd(WsskCmd.DeployFinish)
                     }
                     break
                 }
-                case 0x96:
+                case WsskCmd.DeployFinish:
                     this.log.info(`deployed ${this.deployHash.toString("hex")}`)
                     this.deployedHash = this.deployHash
                     this.deployTimeout = 0
@@ -260,44 +240,56 @@ class ConnectedDevice {
         }
     }
 
-    private async sendCmd(cmd: number, ...payloads: Buffer[]) {
-        const msg = Buffer.concat([encodeU32Array([cmd]), ...payloads])
+    private async sendCmd(cmd: WsskCmd, ...payloads: Buffer[]) {
+        const msg = Buffer.concat([Buffer.from([cmd]), ...payloads])
         await this.sendMsg(msg)
     }
+
+    private async sendDeployCmd(cmd: WsskCmd, ...payloads: Buffer[]) {
+        this.deployCmd = cmd
+        return this.sendCmd(cmd, ...payloads)
+    }
+
+    private async sendPayload(tp: WsskDataType, payload: Buffer) {
+        this.stats.c2d++
+        const tps = WsskDataType[tp]
+        this.trackEvent("send_" + tps)
+        if (payload.length > MAX_PAYLOAD_SIZE)
+            this.warn(
+                `${tps} payload too large (${payload.length}, only ${MAX_PAYLOAD_SIZE} allowed)`
+            )
+        else await this.sendCmd(WsskCmd.C2d, Buffer.from([tp]), payload)
+    }
+
     private async toDevice(msg: ToDeviceMessage) {
         switch (msg.type) {
-            case "method":
-                this.trackEvent("method", {
-                    properties: { methodName: msg.methodName },
-                })
-                this.stats.c2d++
-                let payload = msg.payload
-                if (typeof payload == "number") payload = [payload]
-                if (Array.isArray(payload)) {
-                    await this.sendCmd(
-                        CloudAdapterCmd.AckCloudCommand,
-                        encodeU32Array([msg.rid]),
-                        Buffer.from(msg.methodName, "utf-8"),
-                        Buffer.alloc(1),
-                        encodeDoubleArray(payload)
-                    )
-                } else {
-                    this.warn(
-                        `only double array allowed at this point; ${JSON.stringify(
-                            payload
-                        )}`
-                    )
-                }
+            case "sendJson":
+                await this.sendPayload(
+                    WsskDataType.JSON,
+                    Buffer.from(JSON.stringify(msg.value), "utf-8")
+                )
+                break
+            case "sendBin":
+                await this.sendPayload(
+                    WsskDataType.JSON,
+                    Buffer.from(msg.payload64, "base64")
+                )
                 break
             case "frameTo":
-                await this.sendMsg(Buffer.from(msg.payload64, "base64"))
+                await this.sendCmd(
+                    WsskCmd.JacdacPacket,
+                    Buffer.from(msg.payload64, "base64")
+                )
                 break
             case "setfwd":
-                await this.sendCmd(0x90, Buffer.from([msg.forwarding ? 1 : 0]))
+                await this.sendCmd(
+                    WsskCmd.SetForwarding,
+                    Buffer.from([msg.forwarding ? 1 : 0])
+                )
                 break
             case "ping":
                 await this.sendCmd(
-                    0x91,
+                    WsskCmd.PingDevice,
                     Buffer.from(msg.payload64 || "", "base64")
                 )
                 break
@@ -324,7 +316,7 @@ class ConnectedDevice {
                     d.scriptId,
                     d.scriptVersion
                 )
-                const tmp = body.program.binary.hex
+                const tmp = Buffer.from(body.program.binary.hex, "hex")
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
                     const hd = tmp.slice(0, 8).toString("hex")
@@ -355,76 +347,67 @@ class ConnectedDevice {
 
     async fromDevice(msg: Buffer) {
         this.lastMsg = Date.now()
-        if (msg.length < 4) return this.warn("short frame")
-        if (msg[2] == 0) {
-            // compressed
-            const cmd = msg.readUint16LE(0)
-            this.log.debug(`cmd 0x${cmd.toString(16)}`)
-            const payload = msg.slice(4)
-            switch (cmd) {
-                case CloudAdapterCmd.AckCloudCommand:
-                    this.stats.c2dResp++
-                    await this.notify({
-                        type: "methodRes",
-                        rid: payload.readUInt32LE(0),
-                        statusCode: payload.readUInt32LE(4),
-                        payload: toDoubleArray(payload.slice(8)),
-                    })
-                    break
-                case CloudAdapterCmd.Upload: {
-                    this.stats.d2c++
-                    const [label, rest] = decodeString0(payload)
-                    await this.notify({
-                        type: "jacsUpload",
-                        label,
-                        values: toDoubleArray(rest),
-                    })
-                    break
-                }
-                case CloudAdapterCmd.UploadBin: {
-                    this.stats.d2c++
-                    try {
-                        const msg = parseJdbrMessage(payload)
-                        const telemetry = toTelemetry(
-                            this.id.rowKey,
-                            msg,
-                            Date.now() - 20
-                        )
-                        this.trackEvent("telemetry")
-                        await insertTelemetry(this.id.partitionKey, telemetry)
-                    } catch (e: any) {
-                        this.log.error(`upload-bin: ${e.stack}`)
-                        serverTelemetry().trackException({ exception: e })
+        if (msg.length < 1) return this.warn("short frame")
+
+        const cmd = msg[0]
+        this.log.debug(`cmd 0x${cmd.toString(16)}`)
+        const payload = msg.slice(1)
+        switch (cmd) {
+            case WsskCmd.D2c: {
+                this.stats.d2c++
+                const tp: WsskDataType = msg[1]
+                const data = msg.slice(2)
+
+                switch (tp) {
+                    case WsskDataType.Binary:
+                        await this.notify({
+                            type: "uploadBin",
+                            payload64: data.toString("base64"),
+                        })
+                        break
+                    case WsskDataType.JSON: {
+                        let v: any
+                        try {
+                            v = JSON.parse(data.toString("utf-8"))
+                        } catch {}
+                        if (v === undefined) this.warn(`invalid JSON in D2C`)
+                        else
+                            await this.notify({
+                                type: "uploadJson",
+                                value: v,
+                            })
+                        break
                     }
-                    await this.notify({
-                        type: "uploadBin",
-                        payload64: payload.toString("base64"),
-                    })
-                    break
+                    default:
+                        this.warn(`invalid data type ${tp} in D2C`)
+                        break
                 }
-                case 0x91:
-                    await this.notify({
-                        type: "pong",
-                        payload64: payload.toString("base64"),
-                    })
-                    break
-                case 0x92:
-                    this.sendCmd(0x92, payload)
-                    break
-                default:
-                    if (!(await this.deployStep(cmd, payload)))
-                        this.warn(`unknown cmd ${cmd}`)
+                break
             }
-        } else {
-            this.log.debug(`frame`)
-            const flen = msg[2] + 12
-            if (flen > msg.length) return this.warn("frame too short")
-            await this.notify({
-                type: "frame",
-                payload64: msg.slice(0, flen).toString("base64"),
-            })
+            case WsskCmd.PingDevice:
+                await this.notify({
+                    type: "pong",
+                    payload64: payload.toString("base64"),
+                })
+                break
+            case WsskCmd.PingCloud:
+                this.sendCmd(WsskCmd.PingCloud, payload)
+                break
+            case WsskCmd.JacdacPacket:
+                this.log.debug(`frame`)
+                const flen = payload[2] + 12
+                if (flen > payload.length) return this.warn("frame too short")
+                await this.notify({
+                    type: "frame",
+                    payload64: payload.slice(0, flen).toString("base64"),
+                })
+                break
+            default:
+                if (!(await this.deployStep(cmd, payload)))
+                    this.warn(`unknown cmd ${cmd}`)
         }
     }
+
     closed() {
         this.trackEvent("closed")
         const f = this.unsub
@@ -699,6 +682,7 @@ export async function wsskInit(server: FastifyInstance) {
                             plain.slice(0, JD_AES_BLOCK_BYTES).some(x => x != 0)
                         )
                             return error("bad auth")
+                        log.info(`auth OK`)
                         gotAuth = true
                         cdev.sendMsg = sendEnc
                         runInBg(log, "connected", cdev.connected())

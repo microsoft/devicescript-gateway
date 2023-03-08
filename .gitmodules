@@ -1,0 +1,3 @@
+[submodule "devicescript"]
+	path = devicescript
+	url = https://github.com/microsoft/devicescript

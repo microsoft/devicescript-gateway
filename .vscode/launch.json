@@ -7,13 +7,13 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Local server",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "outputCapture": "std",
-            "program": "run.js",
-            "preLaunchTask": "tsc: build - tsconfig.json",
+            "program": "dev.mjs",
+            "preLaunchTask": "npm: build",
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
             ]

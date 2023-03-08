@@ -81,16 +81,23 @@ async function runMethod(id: DeviceId, methodName: string, payload: any) {
     const rid = (Math.random() * 1000000000) | 0
 
     await pubToDevice(id, {
-        type: "method",
-        methodName,
-        payload,
-        rid,
+        type: "sendJson",
+        // this is currently not implemented on the device
+        value: {
+            type: "method",
+            method: methodName,
+            rid: rid,
+            payload,
+        },
     })
 
     return await untilFromDevice(
         id,
         5 * 1000,
-        msg => msg.type == "methodRes" && msg.rid == rid
+        msg =>
+            msg.type == "uploadJson" &&
+            msg.value.type == "method" &&
+            msg.value.rid == rid
     )
 }
 
