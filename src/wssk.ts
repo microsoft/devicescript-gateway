@@ -1,7 +1,7 @@
 import { FastifyBaseLogger, FastifyInstance } from "fastify"
 import * as crypto from "crypto"
 import * as storage from "./storage"
-import { getDeviceFromFullPath } from "./apidevices"
+import { getDeviceFromFullPath, MAX_WSSK_SIZE } from "./apidevices"
 import {
     DeviceId,
     DeviceInfo,
@@ -27,8 +27,6 @@ const JD_AES_KEY_BYTES = 32
 const JD_AES_BLOCK_BYTES = 16
 
 const JD_ENCSOCK_MAGIC = 0xcee428ca
-
-const MAX_PAYLOAD_SIZE = 230 // for to-device JSON and binary messages
 
 function toDoubleArray(buf: Buffer) {
     const r: number[] = []
@@ -175,6 +173,7 @@ class ConnectedDevice {
         } else if (cmd == this.deployCmd) {
             switch (cmd) {
                 case WsskCmd.GetHash: {
+                    this.log.debug(`got hash`)
                     const isSecondTry = this.deployedHash == this.deployHash
                     this.deployedHash = payload.slice(0, 32)
                     if (this.deployedHash.equals(this.deployHash)) {
@@ -254,9 +253,9 @@ class ConnectedDevice {
         this.stats.c2d++
         const tps = WsskDataType[tp]
         this.trackEvent("send_" + tps)
-        if (payload.length > MAX_PAYLOAD_SIZE)
+        if (payload.length > MAX_WSSK_SIZE)
             this.warn(
-                `${tps} payload too large (${payload.length}, only ${MAX_PAYLOAD_SIZE} allowed)`
+                `${tps} payload too large (${payload.length}, only ${MAX_WSSK_SIZE} allowed)`
             )
         else await this.sendCmd(WsskCmd.C2d, Buffer.from([tp]), payload)
     }
@@ -271,7 +270,7 @@ class ConnectedDevice {
                 break
             case "sendBin":
                 await this.sendPayload(
-                    WsskDataType.JSON,
+                    WsskDataType.Binary,
                     Buffer.from(msg.payload64, "base64")
                 )
                 break
@@ -350,7 +349,6 @@ class ConnectedDevice {
         if (msg.length < 1) return this.warn("short frame")
 
         const cmd = msg[0]
-        this.log.debug(`cmd 0x${cmd.toString(16)}`)
         const payload = msg.slice(1)
         switch (cmd) {
             case WsskCmd.D2c: {
@@ -360,6 +358,8 @@ class ConnectedDevice {
 
                 switch (tp) {
                     case WsskDataType.Binary:
+                        this.trackEvent("uploadBin")
+                        this.log.debug(`uploadBin: ${data.toString("hex")}`)
                         await this.notify({
                             type: "uploadBin",
                             payload64: data.toString("base64"),
@@ -371,11 +371,14 @@ class ConnectedDevice {
                             v = JSON.parse(data.toString("utf-8"))
                         } catch {}
                         if (v === undefined) this.warn(`invalid JSON in D2C`)
-                        else
+                        else {
+                            this.trackEvent("uploadJson")
+                            this.log.debug(`uploadJSON: ${data.toString("utf-8")}`)
                             await this.notify({
                                 type: "uploadJson",
                                 value: v,
                             })
+                        }
                         break
                     }
                     default:
@@ -385,18 +388,20 @@ class ConnectedDevice {
                 break
             }
             case WsskCmd.PingDevice:
+                this.log.debug(`pong`)
                 await this.notify({
                     type: "pong",
                     payload64: payload.toString("base64"),
                 })
                 break
             case WsskCmd.PingCloud:
+                this.log.debug(`ping`)
                 this.sendCmd(WsskCmd.PingCloud, payload)
                 break
             case WsskCmd.JacdacPacket:
-                this.log.debug(`frame`)
                 const flen = payload[2] + 12
                 if (flen > payload.length) return this.warn("frame too short")
+                this.log.debug(`frame ${flen} bytes`)
                 await this.notify({
                     type: "frame",
                     payload64: payload.slice(0, flen).toString("base64"),

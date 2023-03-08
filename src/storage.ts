@@ -44,7 +44,7 @@ export function selfUrl() {
     // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
     const hostname = process.env["WEBSITE_HOSTNAME"]
     if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
-    const protocol = /^(0\.|localhost)/i.test(hostname) ? "http" : "https"
+    const protocol = /^(127\.|0\.|localhost)/i.test(hostname) ? "http" : "https"
     return `${protocol}://${hostname}`
 }
 

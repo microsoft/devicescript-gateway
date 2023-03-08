@@ -14,6 +14,8 @@ import { fullDeviceId, pubToDevice, untilFromDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
 import { Telemetry } from "./telemetry"
 
+export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
+
 function externalDevice(info: DeviceInfo) {
     const conn = Date.now() - info.lastAct < 2 * 60 * 1000
     return {
@@ -77,18 +79,40 @@ async function addDevice(id: DeviceId) {
     return dev
 }
 
+async function sendJSON(id: DeviceId, json: any) {
+    const buf = Buffer.from(JSON.stringify(json), "utf-8")
+    if (buf.length > MAX_WSSK_SIZE)
+        throwStatus(
+            413,
+            `JSON too big (${buf.length} bytes, max ${MAX_WSSK_SIZE})`
+        )
+    await pubToDevice(id, {
+        type: "sendJson",
+        value: json,
+    })
+}
+
+async function sendBinary(id: DeviceId, buf: Buffer) {
+    if (buf.length > MAX_WSSK_SIZE)
+        throwStatus(
+            413,
+            `binary message too big (${buf.length} bytes, max ${MAX_WSSK_SIZE})`
+        )
+    await pubToDevice(id, {
+        type: "sendBin",
+        payload64: buf.toString("base64"),
+    })
+}
+
 async function runMethod(id: DeviceId, methodName: string, payload: any) {
     const rid = (Math.random() * 1000000000) | 0
 
-    await pubToDevice(id, {
-        type: "sendJson",
-        // this is currently not implemented on the device
-        value: {
-            type: "method",
-            method: methodName,
-            rid: rid,
-            payload,
-        },
+    // this is currently not implemented on the device
+    await sendJSON(id, {
+        type: "method",
+        method: methodName,
+        rid: rid,
+        payload,
     })
 
     return await untilFromDevice(
@@ -158,8 +182,27 @@ export async function initHubRoutes(server: FastifyInstance) {
         validateMethod(method)
         if (!args) args = []
         if (!Array.isArray(args)) throwStatus(400, "args need to be array")
-        if (JSON.stringify(args).length > 1024) throwStatus(413, "args too big")
         return await runMethod(devid, method, args)
+    })
+
+    server.post("/devices/:deviceId/json", async req => {
+        const devid = getDeviceIdFromParams(req)
+        await sendJSON(devid, req.body)
+        return {}
+    })
+
+    server.post("/devices/:deviceId/binary", async req => {
+        const devid = getDeviceIdFromParams(req)
+        const { base64, hex } = req.body as any
+        if (!base64 && !hex)
+            throwStatus(400, "either hex or base64 field required")
+        let buf: Buffer
+        try {
+            buf = hex ? Buffer.from(hex, "hex") : Buffer.from(base64, "base64")
+        } catch {}
+        if (!buf || !buf.length) throwStatus(400, "invalid buffer")
+        await sendBinary(devid, buf)
+        return {}
     })
 
     server.post("/devices", async req => {

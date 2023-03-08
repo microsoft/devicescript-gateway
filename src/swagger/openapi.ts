@@ -204,6 +204,34 @@ export function generateOpenApiSpec() {
     )
 
     post(
+        "/devices/{deviceId}/json",
+        action(
+            "SendJSON",
+            "Send JSON Message",
+            "Send a JSON payload to device",
+            [pPath("deviceId", devIdParam), pBody(sObj({}))]
+        )
+    )
+
+    post(
+        "/devices/{deviceId}/binary",
+        action(
+            "SendBinary",
+            "Send Binary Message",
+            "Send a binary payload to device",
+            [
+                pPath("deviceId", devIdParam),
+                pBody(
+                    sObj({
+                        "hex?": sString("hex-encoded buffer"),
+                        "base64?": sString("base64-encoded buffer"),
+                    })
+                ),
+            ]
+        )
+    )
+
+    post(
         "/devices",
         action(
             "CreateDevice",
