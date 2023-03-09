@@ -37,6 +37,8 @@
         "prefix": "[toLower(parameters('namePrefix'))]",
         "blobServicesName": "default",
         "location": "[resourceGroup().location]",
+        "resourceGroupId": "[resourceGroup().id]",
+        "subscriptionId": "[subscription().id]",
         "serverfarmsApiVersion": "2015-08-01",
         "storageApiVersion": "2022-09-01",
         "appInsightsApiVersion": "2020-02-02",
@@ -216,7 +218,7 @@
             "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
             "dependsOn": ["[variables('keyVaultId')]"],
             "properties": {
-                "value": "[concat('ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net')]"
+                "value": "[concat('ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net;Subscription=', variables('subscriptionId'), ';ResourceGroup=', variables('resourceGroupId'))]"
             }
         },
         {
