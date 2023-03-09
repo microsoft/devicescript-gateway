@@ -18,6 +18,7 @@
     "start": "node dist/src/index.js",
     "local": "node dev.mjs",
     "dev": "yarn build && yarn local",
+    "logs": "node infra/logs.mjs",
     "deploy": "node infra/zipdeploy.mjs"
   },
   "dependencies": {
