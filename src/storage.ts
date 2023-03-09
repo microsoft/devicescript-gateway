@@ -10,7 +10,6 @@ import { randomBytes } from "crypto"
 import { promisify } from "util"
 import { gunzip, gzip } from "zlib"
 import { pubToDevice } from "./devutil"
-import { Telemetry, telemetrySinks, TelemetrySource } from "./telemetry"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
 import { createSecretClient } from "./vault"
@@ -24,7 +23,6 @@ let scriptsTable: TableClient
 let scriptVersionsTable: TableClient
 let blobClient: BlobServiceClient
 let scriptsBlobs: ContainerClient
-let telemetryTable: TableClient
 
 export const defaultPartition = "main"
 
@@ -77,19 +75,11 @@ export async function setup() {
     blobClient = BlobServiceClient.fromConnectionString(connStr)
     scriptsBlobs = blobClient.getContainerClient("scripts" + suff)
 
-    telemetryTable = TableClient.fromConnectionString(
-        connStr,
-        "telemetry" + suff
-    )
-
     await devicesTable.createTable()
     await messageHooksTable.createTable()
     await scriptsTable.createTable()
     await scriptVersionsTable.createTable()
-    await telemetryTable.createTable()
     await scriptsBlobs.createIfNotExists()
-
-    telemetrySinks.push(insertTelemetry)
 
     if (false) {
         await scriptsBlobs.createIfNotExists({ access: "blob" })
@@ -346,7 +336,11 @@ function versionKey(version: number) {
     return 1e6 - version + ""
 }
 
-async function createScriptSnapshot(scriptId: string, ver: number, body: ScriptBody) {
+async function createScriptSnapshot(
+    scriptId: string,
+    ver: number,
+    body: ScriptBody
+) {
     const headId = versionKey(ver)
     const blobId = scriptId + "/" + headId
 
@@ -476,127 +470,4 @@ export async function getScriptVersions(scr: ScriptHeader) {
     return (await queryByPartKey<ScriptInfo>(scriptVersionsTable, scr.id)).map(
         d => toUserScript(d, scr)
     )
-}
-
-export type TelemetryQuery = Partial<TelemetrySource> & {
-    start?: number
-    stop?: number
-    first?: number
-}
-
-function sensorId(t: TelemetrySource) {
-    let r = t.sensorId
-    if (t.srv) r += ".S" + t.srv
-    if (t.srvIdx != undefined) r += "." + t.srvIdx
-    return r
-}
-
-function keysOfTelemetry(t: Telemetry) {
-    checkTelemetrySource(t)
-    const suff = sensorId(t)
-    const ms = "T" + t.ms
-    const srvSuff = t.brainId + "." + t.sensorId + "." + t.srvIdx
-    return [
-        ms + "." + t.brainId + "." + suff, // all data in time range
-        t.brainId + "." + ms + "." + suff, // all data from given brain in time range
-        t.brainId + "." + suff + "." + ms, // all data from given sensor in time range
-        "S" + t.srv + "." + ms + "." + srvSuff, // data from given service in time range
-    ]
-}
-
-function sanitizeTime(t: number, defl: number) {
-    if (typeof t != "number" || isNaN(t)) t = defl
-    // -12000 means 12s before now
-    if (t < 0) t = Date.now() + t
-    if (t < 1000000000000) t = 1000000000000
-    if (t > 9990000000000) t = 9990000000000
-    t = Math.round(t)
-    return t
-}
-
-function checkDevId(d: string) {
-    if (typeof d != "string" || !/^[0-9a-f]{16}$/.test(d))
-        throwStatus(400, "invalid device ID")
-}
-
-function checkSrv(srv: string) {
-    if (typeof srv != "string" || !/^[a-z]\w{1,100}$/.test(srv))
-        throwStatus(400, "invalid srv")
-}
-
-function checkTelemetrySource(
-    query: Partial<TelemetrySource>,
-    optional = false
-) {
-    if (!optional || query.brainId) checkDevId(query.brainId)
-    if (!optional || query.sensorId) checkDevId(query.sensorId)
-    if (!optional || query.srv) checkSrv(query.srv)
-    if (!optional || query.srvIdx != undefined) {
-        if (
-            typeof query.srvIdx != "number" ||
-            query.srvIdx >>> 0 !== query.srvIdx ||
-            query.srvIdx > 60
-        )
-            throwStatus(400, "invalid srvIdx")
-    }
-}
-
-export async function queryTelemetry(part: string, query: TelemetryQuery) {
-    const res: TableEntityResult<Telemetry>[] = []
-
-    checkTelemetrySource(query, true)
-
-    let pref = ""
-    let full = false
-    if (query.brainId) {
-        pref = query.brainId + "."
-        if (query.sensorId) {
-            pref += sensorId(query as TelemetrySource) + "."
-            if (query.srv && query.srvIdx != undefined) full = true
-        }
-    } else if (query.srv) {
-        pref = "S" + query.srv + "."
-    }
-
-    const startKey =
-        pref + "T" + sanitizeTime(query.start, 0) + (full ? "" : ".")
-    const stopKey =
-        pref + "T" + sanitizeTime(query.stop, Infinity) + (full ? "" : "~")
-
-    const q = telemetryTable.listEntities<Telemetry>({
-        queryOptions: {
-            filter: odata`PartitionKey eq ${part} and RowKey ge ${startKey} and RowKey le ${stopKey}`,
-        },
-    })
-
-    const first = Math.min(5000, query.first ?? 5000)
-    for await (const entry of q) {
-        res.push(entry)
-        if (res.length >= first) break
-    }
-
-    return res
-}
-
-async function insertTelemetry(part: string, entries: Telemetry[]) {
-    let acc: TransactionAction[] = []
-    for (const e of entries) {
-        const actions = keysOfTelemetry(e).map(
-            k =>
-                [
-                    "create",
-                    {
-                        ...e,
-                        partitionKey: part,
-                        rowKey: k,
-                    },
-                ] as TransactionAction
-        )
-        if (acc.length + actions.length > 99) {
-            await telemetryTable.submitTransaction(acc)
-            acc = []
-        }
-        acc.push(...actions)
-    }
-    if (acc.length) await telemetryTable.submitTransaction(acc)
 }

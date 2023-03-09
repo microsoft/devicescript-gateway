@@ -140,24 +140,6 @@ export function jacdacSpec() {
     )
 
     post(
-        "/devices/{deviceId}/method",
-        action("Call", "Call Method", "Invoke method on a remote device", [
-            pPath("deviceId", devIdParam),
-            pBody(
-                sObj({
-                    method: methodParam,
-                    "args?": sArray(
-                        sNumber(
-                            "Argument to method",
-                            "Argument will be available on the device side"
-                        )
-                    ),
-                })
-            ),
-        ])
-    )
-
-    post(
         "/hooks",
         trigger(
             "Message",

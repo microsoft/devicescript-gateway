@@ -158,7 +158,7 @@ fs.writeFileSync("../.env",
 WEBSITE_OWNER_NAME=${subscriptionId}
 WEBSITE_RESOURCE_GROUP="${resourceGroup}"
 WEBSITE_SITE_NAME="${webAppName}"
-WEBSITE_HOSTNAME=0.0.0.0:7071
+WEBSITE_HOSTNAME=127.0.0.1:7071
 DEVS_KEY_VAULT_NAME="${keyVaultName}"
 DEVS_EVENT_HUB_NAME="${eventHubNamespaceName}"
 DEVS_STORAGE_CONNECTION_STRING_SECRET="${storageConnectionStringSecretName}"

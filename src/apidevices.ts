@@ -10,9 +10,8 @@ import {
 } from "./util"
 import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
-import { fullDeviceId, pubToDevice, untilFromDevice } from "./devutil"
+import { fullDeviceId, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
-import { Telemetry } from "./telemetry"
 
 export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
 
@@ -104,27 +103,6 @@ async function sendBinary(id: DeviceId, buf: Buffer) {
     })
 }
 
-async function runMethod(id: DeviceId, methodName: string, payload: any) {
-    const rid = (Math.random() * 1000000000) | 0
-
-    // this is currently not implemented on the device
-    await sendJSON(id, {
-        type: "method",
-        method: methodName,
-        rid: rid,
-        payload,
-    })
-
-    return await untilFromDevice(
-        id,
-        5 * 1000,
-        msg =>
-            msg.type == "uploadJson" &&
-            msg.value.type == "method" &&
-            msg.value.rid == rid
-    )
-}
-
 function devId(part: string, devid: string): DeviceId {
     return {
         partitionKey: part,
@@ -176,15 +154,7 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
 }
 
 export async function initHubRoutes(server: FastifyInstance) {
-    server.post("/devices/:deviceId/method", async req => {
-        const devid = getDeviceIdFromParams(req)
-        let { method, args } = req.body as any
-        validateMethod(method)
-        if (!args) args = []
-        if (!Array.isArray(args)) throwStatus(400, "args need to be array")
-        return await runMethod(devid, method, args)
-    })
-
+    
     server.post("/devices/:deviceId/json", async req => {
         const devid = getDeviceIdFromParams(req)
         await sendJSON(devid, req.body)
@@ -247,42 +217,9 @@ export async function initHubRoutes(server: FastifyInstance) {
         return infos.map(externalDevice)
     })
 
-    server.get("/devices/telemetry", async req => {
-        const q = req.query as any
-        return await execTelemetryQuery(req, {})
-    })
-
-    server.get<{ Params: { service: string } }>(
-        "/devices/telemetry/:service",
-        async req => {
-            return await execTelemetryQuery(req, { srv: req.params.service })
-        }
-    )
-
     server.get("/devices/:deviceId", async req => {
         const devid = getDeviceIdFromParams(req)
         return await singleDevice(devid)
-    })
-
-    server.get("/devices/:deviceId/telemetry", async req => {
-        const devid = getDeviceIdFromParams(req)
-        return await execTelemetryQuery(req, { brainId: devid.rowKey })
-    })
-
-    server.get<{
-        Params: {
-            deviceId: string
-            sensorId: string
-            service: string
-            idx: string
-        }
-    }>("/devices/:deviceId/telemetry/:sensorId/:service/:idx", async req => {
-        return await execTelemetryQuery(req, {
-            brainId: req.params.deviceId,
-            sensorId: req.params.sensorId,
-            srv: req.params.service,
-            srvIdx: parseInt(req.params.idx),
-        })
     })
 
     server.get("/devices/:deviceId/fwd", async req => {
@@ -300,35 +237,5 @@ export async function initHubRoutes(server: FastifyInstance) {
         const devid = getDeviceIdFromParams(req)
         await storage.deleteDevice(devid)
         return {}
-    })
-}
-
-async function execTelemetryQuery(
-    req: FastifyRequest,
-    q0: storage.TelemetryQuery
-) {
-    const q = req.query as any
-    return (
-        await storage.queryTelemetry(req.partition, {
-            start: parseInt(q.start),
-            stop: parseInt(q.stop),
-            first: parseInt(q.first),
-            ...q0,
-        })
-    ).map(r => {
-        const rr: Telemetry = {
-            ms: r.ms,
-            brainId: r.brainId,
-            sensorId: r.sensorId,
-            srv: r.srv,
-            srvIdx: r.srvIdx,
-            avg: r.avg,
-            // optional:
-            min: r.min,
-            max: r.max,
-            nsampl: r.nsampl,
-            dur: r.dur,
-        }
-        return rr
     })
 }

@@ -61,14 +61,14 @@
         "keyVaultName": "[concat(variables('prefix'), 'keys')]",
         "eventHubNamespaceName": "[concat(variables('prefix'), 'ns')]",
         "eventHubAuthorizationRuleName": "gateway",
-        "telemetryEventHubName": "telemetry",
+        "messageEventHubName": "messages",
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "keyVaultId": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
         "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "appInsightsId": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
         "webAppId": "[resourceId('Microsoft.Web/sites', variables('webAppName'))]",
         "eventHubNamespaceId": "[resourceId('Microsoft.EventHub/namespaces', variables('eventHubNamespaceName'))]",
-        "telemetryEventHubId": "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventHubNamespaceName'), variables('telemetryEventHubName'))]",
+        "messageEventHubId": "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventHubNamespaceName'), variables('messageEventHubName'))]",
         "eventHubAuthorizationRuleId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', variables('eventHubNamespaceName'), variables('eventHubAuthorizationRuleName'))]",
         "storageConnectionStringSecretName": "storageAccountConnectionString",
         "eventHubConnectionStringSecretName": "eventHubAccountConnectionString",
@@ -105,7 +105,7 @@
         {
             "type": "Microsoft.EventHub/namespaces/eventhubs",
             "apiVersion": "[variables('eventHubApiVersion')]",
-            "name": "[concat(variables('eventHubNamespaceName'), '/', variables('telemetryEventHubName'))]",
+            "name": "[concat(variables('eventHubNamespaceName'), '/', variables('messageEventHubName'))]",
             "properties": {
                 "messageRetentionInDays": "[variables('eventHubMessageRetentionInDays')]",
                 "partitionCount": "[variables('eventHubPartitionCount')]"
@@ -216,7 +216,7 @@
             "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
             "dependsOn": ["[variables('keyVaultId')]"],
             "properties": {
-                "value": "[concat('WebAppName=', variables('webAppName') ,';AccountName=admin;AccountKey=', parameters('adminPassword'), ';EndPointSuffix=azurewebsites.net')]"
+                "value": "[concat('ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net')]"
             }
         },
         {
@@ -278,7 +278,7 @@
                 "[variables('serverFarmId')]",
                 "[variables('appInsightsId')]",
                 "[variables('eventHubAuthorizationRuleId')]",
-                "[variables('telemetryEventHubId')]"
+                "[variables('messageEventHubId')]"
             ],
             "identity": {
                 "type": "SystemAssigned"
