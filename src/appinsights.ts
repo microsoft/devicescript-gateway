@@ -1,5 +1,6 @@
 import * as appInsights from "applicationinsights"
 import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
+import { registerMessageSink } from "./messages"
 
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
@@ -24,6 +25,24 @@ export async function setup() {
     _devsTelemetry = new appInsights.TelemetryClient()
     _devsTelemetry.trackEvent({
         name: "server.start",
+    })
+
+    registerMessageSink({
+        name: "app insights",
+        type: "tev",
+        ingest: async (message, device) => {
+            const {
+                n: name,
+                p: properties,
+                m: measurements,
+            } = message as object as {
+                n: string
+                p?: Record<string, string>
+                m?: Record<string, number>
+            }
+
+            device.trackEvent(`dev.from.${name}`, { properties, measurements })
+        },
     })
 }
 

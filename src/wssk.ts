@@ -18,6 +18,7 @@ import {
     TelemetryType,
 } from "applicationinsights/out/Declarations/Contracts"
 import { WsskCmd, WsskDataType } from "./interop"
+import { ingestMessage } from "./messages"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -65,7 +66,7 @@ const bytecodeMaxPkt = 128 + 64
 const deployTimeoutCache: Record<string, number> = {}
 const deployNumFailCache: Record<string, number> = {}
 
-class ConnectedDevice {
+export class ConnectedDevice {
     lastMsg = 0
     stats = zeroDeviceStats()
 
@@ -373,11 +374,16 @@ class ConnectedDevice {
                         if (v === undefined) this.warn(`invalid JSON in D2C`)
                         else {
                             this.trackEvent("uploadJson")
-                            this.log.debug(`uploadJSON: ${data.toString("utf-8")}`)
-                            await this.notify({
-                                type: "uploadJson",
-                                value: v,
-                            })
+                            this.log.debug(
+                                `uploadJSON: ${data.toString("utf-8")}`
+                            )
+                            await Promise.all([
+                                ingestMessage(v, this),
+                                this.notify({
+                                    type: "uploadJson",
+                                    value: v,
+                                }),
+                            ])
                         }
                         break
                     }
@@ -444,7 +450,7 @@ class ConnectedDevice {
         }
     }
 
-    private trackEvent(name: string, options?: Partial<EventTelemetry>) {
+    public trackEvent(name: string, options?: Partial<EventTelemetry>) {
         const { properties = {}, measurements = {}, ...rest } = options || {}
         const deviceProperties = {
             deployedHash: this.deployedHash?.toString("hex") || "",

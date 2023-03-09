@@ -1,6 +1,6 @@
 import { EventHubProducerClient } from "@azure/event-hubs"
 import { serverTelemetry } from "./appinsights"
-import { messageSinks } from "./messages"
+import { registerMessageSink } from "./messages"
 import { createSecretClient } from "./vault"
 
 export async function setup() {
@@ -13,13 +13,28 @@ export async function setup() {
     if (!connStr) throw new Error("event hub connection string is empty")
 
     const producer = new EventHubProducerClient(connStr, "messages")
-    messageSinks.push(async message => {
-        // Prepare a batch of three events.
-        const batch = await producer.createBatch()
-        if (!batch.tryAdd({ body: message }))
-            serverTelemetry().trackEvent({
-                name: "messages.eventhub.push.fail",
-            })
-        else await producer.sendBatch(batch)
+    registerMessageSink({
+        name: "event hub",
+        ingest: async (message, device) => {
+            const batch = await producer.createBatch()
+            const correlationId = device.sessionId
+            const body = {
+                context: {
+                    deviceId: device.id,
+                    deviceName: device.dev.name,
+                },
+                data: message,
+            }
+            if (
+                !batch.tryAdd({
+                    body,
+                    correlationId,
+                })
+            ) {
+                serverTelemetry().trackEvent({
+                    name: "messages.eventhub.push.fail",
+                })
+            } else await producer.sendBatch(batch)
+        },
     })
 }
