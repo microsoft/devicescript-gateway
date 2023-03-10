@@ -11,11 +11,13 @@ export interface DeviceMessage extends MessageBase {
 
 export interface SendJsonToDevice extends DeviceMessage {
     type: "sendJson"
+    topic: string
     value: any
 }
 
 export interface SendBinToDevice extends DeviceMessage {
     type: "sendBin"
+    topic: string
     payload64: string
 }
 
@@ -31,11 +33,13 @@ export interface DeployToDevice extends DeviceMessage {
 
 export interface UploadJsonFromDevice extends DeviceMessage {
     type: "uploadJson"
+    topic: string
     value: any
 }
 
 export interface UploadBinFromDevice extends DeviceMessage {
     type: "uploadBin"
+    topic: string
     payload64: string
 }
 
@@ -56,7 +60,9 @@ export interface PongFromDevice extends DeviceMessage {
 
 export interface SetForwardingToDevice extends DeviceMessage {
     type: "setfwd"
-    forwarding: boolean
+    exceptions?: boolean
+    logging?: boolean
+    forwarding?: boolean
 }
 
 export type DeviceStats = Record<string, number> & {
@@ -76,6 +82,17 @@ export interface FrameFromDevice extends DeviceMessage {
     payload64: string
 }
 
+export interface ExnFromDevice extends DeviceMessage {
+    type: "exn"
+    logs: string[]
+}
+
+export interface LogsFromDevice extends DeviceMessage {
+    type: "logs"
+    logs: string[]
+}
+
+
 export type ToDeviceMessage =
     | SendBinToDevice
     | SendJsonToDevice
@@ -91,6 +108,8 @@ export type FromDeviceMessage =
     | UploadBinFromDevice
     | PongFromDevice
     | WarningFromDevice
+    | ExnFromDevice
+    | LogsFromDevice
 
 export function zeroDeviceStats(): DeviceStats {
     return {

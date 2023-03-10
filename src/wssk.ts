@@ -19,6 +19,7 @@ import {
 } from "applicationinsights/out/Declarations/Contracts"
 import { WsskCmd, WsskDataType } from "./interop"
 import { ingestMessage } from "./messages"
+import { WsskStreamingType } from "../devicescript/interop/src/interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -58,6 +59,10 @@ function encodeU32Array(arr: number[]) {
     return r
 }
 
+function encodeString0(s: string) {
+    return Buffer.from(s + "\u0000", "utf-8")
+}
+
 function noop() {}
 
 const bytecodeAlign = 32
@@ -66,8 +71,24 @@ const bytecodeMaxPkt = 128 + 64
 const deployTimeoutCache: Record<string, number> = {}
 const deployNumFailCache: Record<string, number> = {}
 
+function splitLines(prevBuf: Buffer, buf: Buffer) {
+    const lines: string[] = []
+    if (prevBuf) buf = Buffer.concat([prevBuf, buf])
+    let beg = 0
+    for (let i = 0; i < buf.length; ++i) {
+        if (buf[i] == 10) {
+            const slc = buf.slice(beg, i)
+            if (slc.length) lines.push(slc.toString("utf-8"))
+            beg = i + 1
+        }
+    }
+    buf = buf.slice(beg)
+    return { buf, lines }
+}
+
 export class ConnectedDevice {
     lastMsg = 0
+    tickNo = 0
     stats = zeroDeviceStats()
 
     readonly sessionId = crypto.randomBytes(32).toString("base64url")
@@ -78,6 +99,12 @@ export class ConnectedDevice {
     private deployHash: Buffer
     private deployPtr = 0
     private deployCmd: WsskCmd = 0
+    streamingMask = WsskStreamingType.DefaultMask
+
+    private lastExnBuffer: Buffer
+    private exnBuffer: Buffer
+    private exnLines: string[]
+    private logBuffer: Buffer
 
     private deployedHash: Buffer
 
@@ -250,15 +277,22 @@ export class ConnectedDevice {
         return this.sendCmd(cmd, ...payloads)
     }
 
-    private async sendPayload(tp: WsskDataType, payload: Buffer) {
+    private async sendPayload(tp: WsskDataType, topic: string, data: Buffer) {
         this.stats.c2d++
         const tps = WsskDataType[tp]
         this.trackEvent("send_" + tps)
+        const payload = Buffer.concat([encodeString0(topic), data])
         if (payload.length > MAX_WSSK_SIZE)
             this.warn(
-                `${tps} payload too large (${payload.length}, only ${MAX_WSSK_SIZE} allowed)`
+                `${tps} payload too large (${payload.length}, only ${MAX_WSSK_SIZE} allowed; topic=${topic})`
             )
         else await this.sendCmd(WsskCmd.C2d, Buffer.from([tp]), payload)
+    }
+
+    private async setStreaming(mask: WsskStreamingType) {
+        const d = Buffer.alloc(2)
+        d.writeUInt16LE(mask, 0)
+        await this.sendCmd(WsskCmd.SetStreaming, d)
     }
 
     private async toDevice(msg: ToDeviceMessage) {
@@ -266,12 +300,14 @@ export class ConnectedDevice {
             case "sendJson":
                 await this.sendPayload(
                     WsskDataType.JSON,
+                    msg.topic,
                     Buffer.from(JSON.stringify(msg.value), "utf-8")
                 )
                 break
             case "sendBin":
                 await this.sendPayload(
                     WsskDataType.Binary,
+                    msg.topic,
                     Buffer.from(msg.payload64, "base64")
                 )
                 break
@@ -281,12 +317,21 @@ export class ConnectedDevice {
                     Buffer.from(msg.payload64, "base64")
                 )
                 break
-            case "setfwd":
-                await this.sendCmd(
-                    WsskCmd.SetForwarding,
-                    Buffer.from([msg.forwarding ? 1 : 0])
-                )
+            case "setfwd": {
+                const setBit = (
+                    v: boolean | undefined,
+                    m: WsskStreamingType
+                ) => {
+                    if (v === undefined) return
+                    if (v) this.streamingMask |= m
+                    else this.streamingMask &= ~m
+                }
+                setBit(msg.forwarding, WsskStreamingType.Jacdac)
+                setBit(msg.logging, WsskStreamingType.Dmesg)
+                setBit(msg.exceptions, WsskStreamingType.Exceptions)
+                await this.setStreaming(this.streamingMask)
                 break
+            }
             case "ping":
                 await this.sendCmd(
                     WsskCmd.PingDevice,
@@ -340,8 +385,9 @@ export class ConnectedDevice {
         this.trackEvent("connect")
         this.unsub = await subToDevice(this.id, this.toDevice.bind(this))
         this.tickInt = setInterval(() => {
-            runInBg(this.log, "tick", this.tick())
-        }, 1981)
+            runInBg(this.log, "tick", this.fastTick())
+        }, 272)
+        await this.setStreaming(this.streamingMask)
         await this.syncScript(await storage.getDevice(this.id))
     }
 
@@ -360,27 +406,36 @@ export class ConnectedDevice {
                 switch (tp) {
                     case WsskDataType.Binary:
                         this.trackEvent("uploadBin")
-                        this.log.debug(`uploadBin: ${data.toString("hex")}`)
+                        const [topic, payload] = decodeString0(data)
+                        this.log.debug(
+                            `uploadBin: ${topic}: ${payload.toString("hex")}`
+                        )
                         await this.notify({
                             type: "uploadBin",
-                            payload64: data.toString("base64"),
+                            topic,
+                            payload64: payload.toString("base64"),
                         })
                         break
                     case WsskDataType.JSON: {
+                        const [topic, payload] = decodeString0(data)
                         let v: any
                         try {
-                            v = JSON.parse(data.toString("utf-8"))
+                            v = JSON.parse(payload.toString("utf-8"))
                         } catch {}
-                        if (v === undefined) this.warn(`invalid JSON in D2C`)
+                        if (v === undefined)
+                            this.warn(`invalid JSON in D2C(${topic})`)
                         else {
                             this.trackEvent("uploadJson")
                             this.log.debug(
-                                `uploadJSON: ${data.toString("utf-8")}`
+                                `uploadJSON: ${topic}: ${payload.toString(
+                                    "utf-8"
+                                )}`
                             )
                             await Promise.all([
                                 ingestMessage(v, this),
                                 this.notify({
                                     type: "uploadJson",
+                                    topic,
                                     value: v,
                                 }),
                             ])
@@ -413,6 +468,19 @@ export class ConnectedDevice {
                     payload64: payload.slice(0, flen).toString("base64"),
                 })
                 break
+            case WsskCmd.ExceptionReport: {
+                const { buf, lines } = splitLines(this.exnBuffer, payload)
+                this.exnBuffer = buf
+                if (this.exnLines) this.exnLines.push(...lines)
+                else this.exnLines = lines
+                break
+            }
+            case WsskCmd.Dmesg: {
+                const { buf, lines } = splitLines(this.logBuffer, payload)
+                this.logBuffer = buf
+                if (lines.length)
+                    await this.notify({ type: "logs", logs: lines })
+            }
             default:
                 if (!(await this.deployStep(cmd, payload)))
                     this.warn(`unknown cmd ${cmd}`)
@@ -430,7 +498,27 @@ export class ConnectedDevice {
         }
     }
 
-    async tick() {
+    private async fastTick() {
+        if (this.exnBuffer && this.lastExnBuffer === this.exnBuffer) {
+            if (this.exnBuffer.length) {
+                if (!this.exnLines) this.exnLines = []
+                this.exnLines.push(this.exnBuffer.toString("utf-8"))
+            }
+            this.exnBuffer = null
+            if (this.exnLines?.length) {
+                this.log.info(`exception: ${this.exnLines.join("\n")}`)
+                await this.notify({
+                    type: "exn",
+                    logs: this.exnLines,
+                })
+                this.exnLines = null
+            }
+        }
+        this.lastExnBuffer = this.exnBuffer
+        if ((this.tickNo++ & 7) == 0) await this.slowTick()
+    }
+
+    private async slowTick() {
         if (this.lastMsg || Object.values(this.stats).some(v => v != 0)) {
             const statsUpdate = this.stats
             const lastMsg = this.lastMsg
@@ -725,7 +813,7 @@ export async function wsskInit(server: FastifyInstance) {
             })
 
             conn.socket.send(hello)
-            sendEnc(Buffer.alloc(JD_AES_KEY_BYTES)) // send auth packet (lots of zeros)
+            await sendEnc(Buffer.alloc(JD_AES_KEY_BYTES)) // send auth packet (lots of zeros)
 
             function error(msg: string) {
                 log.warn(`closing socket: ${msg}`)

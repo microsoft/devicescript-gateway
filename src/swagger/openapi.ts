@@ -167,7 +167,14 @@ export function generateOpenApiSpec() {
             "SendJSON",
             "Send JSON Message",
             "Send a JSON payload to device",
-            [pPath("deviceId", devIdParam), pBody(sObj({}))]
+            [
+                pPath("deviceId", devIdParam),
+                pBody(
+                    sObj({
+                        $topic: sString("MQTT-like topic"),
+                    })
+                ),
+            ]
         )
     )
 
@@ -181,6 +188,7 @@ export function generateOpenApiSpec() {
                 pPath("deviceId", devIdParam),
                 pBody(
                     sObj({
+                        $topic: sString("MQTT-like topic"),
                         "hex?": sString("hex-encoded buffer"),
                         "base64?": sString("base64-encoded buffer"),
                     })

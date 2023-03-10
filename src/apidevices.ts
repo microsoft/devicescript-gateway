@@ -78,7 +78,7 @@ async function addDevice(id: DeviceId) {
     return dev
 }
 
-async function sendJSON(id: DeviceId, json: any) {
+async function sendJSON(id: DeviceId, topic: string, json: any) {
     const buf = Buffer.from(JSON.stringify(json), "utf-8")
     if (buf.length > MAX_WSSK_SIZE)
         throwStatus(
@@ -87,11 +87,12 @@ async function sendJSON(id: DeviceId, json: any) {
         )
     await pubToDevice(id, {
         type: "sendJson",
+        topic,
         value: json,
     })
 }
 
-async function sendBinary(id: DeviceId, buf: Buffer) {
+async function sendBinary(id: DeviceId, topic: string, buf: Buffer) {
     if (buf.length > MAX_WSSK_SIZE)
         throwStatus(
             413,
@@ -99,6 +100,7 @@ async function sendBinary(id: DeviceId, buf: Buffer) {
         )
     await pubToDevice(id, {
         type: "sendBin",
+        topic,
         payload64: buf.toString("base64"),
     })
 }
@@ -154,10 +156,12 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
 }
 
 export async function initHubRoutes(server: FastifyInstance) {
-    
     server.post("/devices/:deviceId/json", async req => {
         const devid = getDeviceIdFromParams(req)
-        await sendJSON(devid, req.body)
+        const topic = (req.body as any)["$topic"]
+        if (typeof topic != "string") throwStatus(400, "missing $topic")
+        delete (req.body as any)["$topic"]
+        await sendJSON(devid, topic, req.body)
         return {}
     })
 
@@ -166,12 +170,14 @@ export async function initHubRoutes(server: FastifyInstance) {
         const { base64, hex } = req.body as any
         if (!base64 && !hex)
             throwStatus(400, "either hex or base64 field required")
+        const topic = (req.body as any)["$topic"]
+        if (typeof topic != "string") throwStatus(400, "missing $topic")
         let buf: Buffer
         try {
             buf = hex ? Buffer.from(hex, "hex") : Buffer.from(base64, "base64")
         } catch {}
         if (!buf || !buf.length) throwStatus(400, "invalid buffer")
-        await sendBinary(devid, buf)
+        await sendBinary(devid, topic, buf)
         return {}
     })
 
