@@ -1,10 +1,6 @@
 import { ConnectedDevice } from "./wssk"
 
-export type Message = {
-    _:
-        | "tev" // trackEvent, reserved
-        | string
-} & object
+export type Message = object
 
 export interface MessageSink {
     /**
@@ -12,9 +8,9 @@ export interface MessageSink {
      */
     name: string
     /**
-     * value in '_', may be undefined for 'unmarked' messages
+     * may be undefined for 'unmarked' messages
      */
-    type?: string
+    topicName?: string
 
     /**
      * Ingest incoming message
@@ -39,14 +35,17 @@ export function registerMessageSink(sink: MessageSink) {
  * @param context
  * @returns
  */
-export async function ingestMessage(message: Message, device: ConnectedDevice) {
+export async function ingestMessage(
+    topicName: string,
+    message: Message,
+    device: ConnectedDevice
+) {
     if (!message) return
 
-    // what type of message
-    const messageType = message._
-
     // collect sinks interrested
-    const sinks = messageSinks.filter(({ type }) => type === messageType)
+    const sinks = messageSinks.filter(
+        ({ topicName: type }) => type === topicName
+    )
 
     // dispatch
     await Promise.all(sinks.map(sink => sink.ingest(message, device)))

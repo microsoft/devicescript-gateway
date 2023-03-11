@@ -433,7 +433,7 @@ export class ConnectedDevice {
                                 )}`
                             )
                             await Promise.all([
-                                ingestMessage(v, this),
+                                ingestMessage(topic, v, this),
                                 this.notify({
                                     type: "uploadJson",
                                     topic,

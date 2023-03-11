@@ -29,7 +29,7 @@ export async function setup() {
 
     registerMessageSink({
         name: "app insights events",
-        type: "tev",
+        topicName: "tev",
         ingest: async (message, device) => {
             const {
                 n: name,
@@ -47,7 +47,7 @@ export async function setup() {
 
     registerMessageSink({
         name: "app insights metrics",
-        type: "tme",
+        topicName: "tme",
         ingest: async (message, device) => {
             const {
                 n: name,
