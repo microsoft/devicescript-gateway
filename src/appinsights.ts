@@ -52,7 +52,6 @@ export async function setup() {
             const {
                 n: name,
                 v: value,
-                s: sum,
                 mi: min,
                 ma: max,
                 c: count,
@@ -61,7 +60,6 @@ export async function setup() {
             } = message as object as {
                 n: string
                 v: number
-                s: number
                 mi: number
                 ma: number
                 c: number
