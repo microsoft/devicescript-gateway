@@ -541,12 +541,12 @@ export class ConnectedDevice {
 
     public trackEvent(name: string, options?: Partial<EventTelemetry>) {
         const { properties = {}, measurements = {}, ...rest } = options || {}
-        const deviceProperties = {
-            deployedHash: this.deployedHash?.toString("hex") || "",
-        }
-        const deviceMeasurements = {
-            deployNumFail: this.deployNumFail || 0,
-        }
+        const deviceProperties: any = {}
+        if (this.deployedHash)
+            deviceProperties.deployedHash = this.deployedHash.toString("hex")
+        const deviceMeasurements: any = {}
+        if (this.deployNumFail)
+            deviceMeasurements.deployNumFail = this.deployNumFail
         this.track(
             <EventTelemetry>{
                 ...rest,
