@@ -565,9 +565,15 @@ export class ConnectedDevice {
     }
 
     public trackMetric(name: string, options: Partial<MetricTelemetry>) {
+        console.log(`metric`, {
+            name,
+            kind: "Aggregation",
+            ...options,
+        })
         this.track(
             {
                 name,
+                kind: "Aggregation",
                 ...options,
             },
             TelemetryType.Metric
