@@ -14,6 +14,7 @@ import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import { contextTagKeys, devsTelemetry, serverTelemetry } from "./appinsights"
 import {
     EventTelemetry,
+    MetricTelemetry,
     Telemetry,
     TelemetryType,
 } from "applicationinsights/out/Declarations/Contracts"
@@ -560,6 +561,16 @@ export class ConnectedDevice {
                 name: `device.${name}`,
             },
             TelemetryType.Event
+        )
+    }
+
+    public trackMetric(name: string, options: Partial<MetricTelemetry>) {
+        this.track(
+            {
+                name,
+                ...options,
+            },
+            TelemetryType.Metric
         )
     }
 

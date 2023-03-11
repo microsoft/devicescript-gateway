@@ -28,7 +28,7 @@ export async function setup() {
     })
 
     registerMessageSink({
-        name: "app insights",
+        name: "app insights events",
         type: "tev",
         ingest: async (message, device) => {
             const {
@@ -41,7 +41,39 @@ export async function setup() {
                 m?: Record<string, number>
             }
 
-            device.trackEvent(`dev.from.${name}`, { properties, measurements })
+            device.trackEvent(`devs.${name}`, { properties, measurements })
+        },
+    })
+
+    registerMessageSink({
+        name: "app insights metrics",
+        type: "tme",
+        ingest: async (message, device) => {
+            const {
+                n: name,
+                v: value,
+                mi: min,
+                ma: max,
+                c: count,
+                d: stdDev,
+                p: properties,
+            } = message as object as {
+                n: string
+                v: number
+                mi: number
+                ma: number
+                c: number
+                d: number
+                p?: Record<string, string>
+            }
+            device.trackMetric(`devs.${name}`, {
+                value,
+                min,
+                max,
+                count,
+                stdDev,
+                properties,
+            })
         },
     })
 }
