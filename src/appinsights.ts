@@ -55,7 +55,7 @@ export async function setup() {
                 mi: min,
                 ma: max,
                 c: count,
-                d: stdDev,
+                a: variance,
                 p: properties,
             } = message as object as {
                 n: string
@@ -63,9 +63,10 @@ export async function setup() {
                 mi: number
                 ma: number
                 c: number
-                d: number
+                a: number
                 p?: Record<string, string>
             }
+            const stdDev = isNaN(variance) ? undefined : Math.sqrt(variance)
             // ignore sum
             device.trackMetric(`devs.${name}`, {
                 value,
