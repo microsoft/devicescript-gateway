@@ -6,4 +6,4 @@ export {
     RoleDebugInfo,
     VarDebugInfo,
     SrcMap,
-} from "../devicescript/interop/src/interop"
+} from "../../../devicescript/interop/src/interop"
