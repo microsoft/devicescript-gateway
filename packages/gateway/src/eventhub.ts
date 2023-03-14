@@ -1,7 +1,9 @@
 import { EventHubProducerClient } from "@azure/event-hubs"
 import { serverTelemetry } from "./appinsights"
-import { registerMessageSink } from "./messages"
 import { createSecretClient } from "./vault"
+import * as mq from "./mq"
+import { DeviceId } from "./schema"
+import * as storage from "./storage"
 
 export async function setup() {
     const secrets = createSecretClient()
@@ -18,28 +20,30 @@ export async function setup() {
     }
 
     const producer = new EventHubProducerClient(connStr, "messages")
-    registerMessageSink({
-        name: "event hub",
-        ingest: async (message, device) => {
-            const batch = await producer.createBatch()
-            const correlationId = device.sessionId
-            const body = {
-                context: {
-                    deviceId: device.id,
-                    deviceName: device.dev.name,
-                },
-                data: message,
-            }
-            if (
-                !batch.tryAdd({
-                    body,
-                    correlationId,
-                })
-            ) {
-                serverTelemetry()?.trackEvent({
-                    name: "messages.eventhub.push.fail",
-                })
-            } else await producer.sendBatch(batch)
-        },
+
+    mq.sub("dev/+/+/from/#", async (message: { topic: string }) => {
+        const topic = message.topic
+        const { partitionKey, rowKey } =
+            /^dev\/(?<partitionKey>[^/]+)\/(?<rowKey>[^/]+)\/from\//.exec(topic)
+                .groups as object as DeviceId
+        const device = await storage.getDevice({ partitionKey, rowKey })
+
+        const batch = await producer.createBatch()
+        const body = {
+            context: {
+                deviceId: device.rowKey,
+                deviceName: device.name,
+            },
+            data: message,
+        }
+        if (
+            !batch.tryAdd({
+                body,
+            })
+        ) {
+            serverTelemetry()?.trackEvent({
+                name: "messages.eventhub.push.fail",
+            })
+        } else await producer.sendBatch(batch)
     })
 }

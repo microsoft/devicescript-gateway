@@ -19,8 +19,8 @@ import {
     TelemetryType,
 } from "applicationinsights/out/Declarations/Contracts"
 import { WsskCmd, WsskDataType } from "./interop"
-import { ingestMessage } from "./messages"
-import { WsskStreamingType } from "../../../devicescript/interop/src/interop"
+import { ingestInfrastructureMessage } from "./messages"
+import type { WsskStreamingType } from "../../../devicescript/interop/src/interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -432,14 +432,17 @@ export class ConnectedDevice {
                                     "utf-8"
                                 )}`
                             )
-                            await Promise.all([
-                                ingestMessage(topic, v, this),
-                                this.notify({
+                            const handled = await ingestInfrastructureMessage(
+                                topic,
+                                v,
+                                this
+                            )
+                            if (!handled)
+                                await this.notify({
                                     type: "uploadJson",
-                                    topic,
+                                    topic: `dev/${this.path}/from/${topic}`,
                                     value: v,
-                                }),
-                            ])
+                                })
                         }
                         break
                     }

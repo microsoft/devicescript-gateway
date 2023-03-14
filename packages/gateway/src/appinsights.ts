@@ -1,7 +1,7 @@
 import * as mq from "./mq"
 import * as appInsights from "applicationinsights"
 import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
-import { registerMessageSink } from "./messages"
+import { registerInfrastructureMessageSink } from "./messages"
 
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
@@ -34,7 +34,7 @@ export async function setup() {
         name: "server.start",
     })
 
-    registerMessageSink({
+    registerInfrastructureMessageSink({
         name: "app insights events",
         topicName: "tev",
         ingest: async (message, device) => {
@@ -52,7 +52,7 @@ export async function setup() {
         },
     })
 
-    registerMessageSink({
+    registerInfrastructureMessageSink({
         name: "app insights metrics",
         topicName: "tme",
         ingest: async (message, device) => {

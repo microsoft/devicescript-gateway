@@ -80,3 +80,20 @@ export async function until<T>(
             }, timeoutMS)
     })
 }
+
+export async function resolveDeviceTopic(topic: string) {
+    const { partitionKey, rowKey, direction, route } =
+        /^dev\/(?<partitionKey>[^/]+)\/(?<rowKey>[^/]+)\/(?<direction>(from|to))\/(?<route>.*)$/.exec(
+            topic
+        ).groups as object as {
+            partitionKey: string
+            rowKey: string
+            direction: "from" | "to"
+            route: string
+        }
+    return {
+        devid: { partitionKey, rowKey },
+        direction,
+        route,
+    }
+}

@@ -16,37 +16,39 @@ export interface MessageSink {
      * Ingest incoming message
      * @param message
      */
-    ingest(message: Message, device: ConnectedDevice): Promise<void>
+    ingest(message: Message, device: ConnectedDevice): Promise<boolean>
 }
 
 const messageSinks: MessageSink[] = []
 
 /**
- * Adds a device message sink
+ * Adds a device message sink, not on mqtt broker
  * @param sink
  */
-export function registerMessageSink(sink: MessageSink) {
+export function registerInfrastructureMessageSink(sink: MessageSink) {
     messageSinks.push(sink)
 }
 
 /**
- * Processes a device message
+ * Processes a device message, not on mqtt broker
  * @param message
  * @param context
  * @returns
  */
-export async function ingestMessage(
+export async function ingestInfrastructureMessage(
     topicName: string,
     message: Message,
     device: ConnectedDevice
-) {
-    if (!message) return
+): Promise<boolean> {
+    if (!message) return false
 
     // collect sinks interrested
     const sinks = messageSinks.filter(
         ({ topicName: type }) => type === topicName
     )
+    if (!sinks?.length) return false
 
     // dispatch
     await Promise.all(sinks.map(sink => sink.ingest(message, device)))
+    return true
 }
