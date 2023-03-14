@@ -371,7 +371,7 @@ export class ConnectedDevice {
                     } else this.setDeploy(tmp)
                 }
             } catch (e: any) {
-                serverTelemetry().trackException({ exception: e })
+                serverTelemetry()?.trackException({ exception: e })
             }
         }
 
@@ -586,6 +586,8 @@ export class ConnectedDevice {
 
     private track(telemetry: Telemetry, telemetryType: TelemetryType) {
         const dt = devsTelemetry()
+        if (!dt) return
+
         const { tagOverrides = {}, ...rest } = telemetry
         const {
             productId,
@@ -807,7 +809,7 @@ export async function wsskInit(server: FastifyInstance) {
                     }
                 } catch (e: any) {
                     log.error(`message handler: ${e.stack}`)
-                    serverTelemetry().trackException({ exception: e })
+                    serverTelemetry()?.trackException({ exception: e })
                 }
             })
 

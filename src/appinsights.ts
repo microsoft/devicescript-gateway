@@ -1,3 +1,4 @@
+import * as mq from "./mq"
 import * as appInsights from "applicationinsights"
 import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
 import { registerMessageSink } from "./messages"
@@ -5,8 +6,14 @@ import { registerMessageSink } from "./messages"
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
 export async function setup() {
+    const connString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
+    if (!connString) {
+        console.log(`no application insights connection string, skipping`)
+        return
+    }
+
     appInsights
-        .setup()
+        .setup(connString)
         .setAutoDependencyCorrelation(true)
         .setAutoCollectRequests(true)
         .setAutoCollectPerformance(true, true)
@@ -81,7 +88,7 @@ export async function setup() {
 }
 
 export function serverTelemetry(): appInsights.TelemetryClient {
-    return appInsights.defaultClient
+    return _devsTelemetry ? appInsights.defaultClient : undefined
 }
 
 export function devsTelemetry(): appInsights.TelemetryClient {

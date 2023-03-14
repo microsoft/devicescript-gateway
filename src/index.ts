@@ -152,7 +152,7 @@ async function main() {
     const host = "0.0.0.0"
     server.listen({ port, host }, err => {
         if (err) {
-            appinsights.serverTelemetry().trackException({ exception: err })
+            appinsights.serverTelemetry()?.trackException({ exception: err })
             console.error(err)
             process.exit(1)
         }

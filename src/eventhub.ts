@@ -36,7 +36,7 @@ export async function setup() {
                     correlationId,
                 })
             ) {
-                serverTelemetry().trackEvent({
+                serverTelemetry()?.trackEvent({
                     name: "messages.eventhub.push.fail",
                 })
             } else await producer.sendBatch(batch)
