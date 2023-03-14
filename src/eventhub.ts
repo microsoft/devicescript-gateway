@@ -10,7 +10,12 @@ export async function setup() {
         "eventHubAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
     const connStr = connStrSecret.value
-    if (!connStr) throw new Error("event hub connection string is empty")
+    if (!connStr) {
+        console.log(
+            "no EventHub connection string secret, skipping registration"
+        )
+        return
+    }
 
     const producer = new EventHubProducerClient(connStr, "messages")
     registerMessageSink({
