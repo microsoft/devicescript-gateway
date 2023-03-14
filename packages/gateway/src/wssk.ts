@@ -20,7 +20,7 @@ import {
 } from "applicationinsights/out/Declarations/Contracts"
 import { WsskCmd, WsskDataType } from "./interop"
 import { ingestMessage } from "./messages"
-import { WsskStreamingType } from "../devicescript/interop/src/interop"
+import { WsskStreamingType } from "../../../devicescript/interop/src/interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
