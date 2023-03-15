@@ -16,7 +16,7 @@
     "debug": "cd infra && zx ./debug.mjs",
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "node dist/src/index.js",
+    "start": "node dist/packages/gateway/src/index.js",
     "local": "node dev.mjs",
     "dev": "yarn build && yarn local",
     "logs": "node infra/logs.mjs",
