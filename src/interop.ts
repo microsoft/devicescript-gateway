@@ -6,4 +6,5 @@ export {
     RoleDebugInfo,
     VarDebugInfo,
     SrcMap,
-} from "../../../devicescript/interop/src/interop"
+    WsskStreamingType
+} from "../devicescript/interop/src/interop"

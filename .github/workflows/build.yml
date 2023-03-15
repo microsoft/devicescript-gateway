@@ -7,7 +7,7 @@ on:
 name: build
 
 env:
-    AZURE_WEBAPP_PACKAGE_PATH: "./packages/gateway/"
+    AZURE_WEBAPP_PACKAGE_PATH: "./"
     NODE_VERSION: "18.x"
 
 jobs:

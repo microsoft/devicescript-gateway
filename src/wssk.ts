@@ -19,9 +19,8 @@ import {
     TelemetryType,
     TraceTelemetry,
 } from "applicationinsights/out/Declarations/Contracts"
-import { WsskCmd, WsskDataType } from "./interop"
+import { WsskCmd, WsskDataType, WsskStreamingType } from "./interop"
 import { ingestLogs, ingestMessage } from "./messages"
-import { WsskStreamingType } from "../../../devicescript/interop/src/interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2

@@ -1,32 +1,57 @@
 {
-    "private": true,
-    "workspaces": [
-        "packages/*"
-    ],
-    "devDependencies": {
-        "nx": "15.8.6"
-    },
-    "tasksRunnerOptions": {
-        "default": {
-            "runner": "nx/tasks-runners/default",
-            "options": {
-                "cacheableOperations": [
-                    "build",
-                    "test",
-                    "lint"
-                ]
-            }
-        }
-    },
-    "targetDefaults": {
-        "build": {
-            "dependsOn": [
-                "^build"
-            ]
-        }
-    },
-    "scripts": {
-        "setup": "git submodule update --init --recursive && git pull && yarn install --frozen-lockfile",
-        "build": "nx run-many --target=build"
-    }
+  "name": "devicescript-gateway",
+  "version": "0.1.0",
+  "description": "Development Gateway infrastructure supporting DeviceScript.",
+  "license": "MIT",
+  "private": true,
+  "files": [
+    "./dist/**"
+  ],
+  "scripts": {
+    "setup": "git submodule update --init --recursive && git pull && yarn install --frozen-lockfile",
+    "connection": "cd infra && zx ./connection.mjs",
+    "provision": "cd infra && zx ./provision.mjs",
+    "unprovision": "cd infra && zx ./unprovision.mjs",
+    "launch": "cd infra && zx ./launch.mjs",
+    "debug": "cd infra && zx ./debug.mjs",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "node dist/src/index.js",
+    "local": "node dev.mjs",
+    "dev": "yarn build && yarn local",
+    "logs": "node infra/logs.mjs",
+    "deploy": "node infra/zipdeploy.mjs"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.2.0",
+    "@azure/event-hubs": "^5.8.0",
+    "@azure/identity": "^3.1.3",
+    "@azure/keyvault-secrets": "^4.6.0",
+    "@azure/storage-blob": "^12.11.0",
+    "@fastify/basic-auth": "^4.0.0",
+    "@fastify/cors": "^8.1.0",
+    "@fastify/static": "^6.5.0",
+    "@fastify/websocket": "^7.1.0",
+    "aedes": "^0.48.0",
+    "applicationinsights": "^2.5.0",
+    "fastify": "^4.9.2",
+    "http-errors": "^2.0.0",
+    "node-fetch": "^2.6.7",
+    "openapi-types": "^12.1.0",
+    "pino-pretty": "^9.1.1",
+    "swagger-ui-dist": "^4.15.0"
+  },
+  "devDependencies": {
+    "@octokit/core": "^4.2.0",
+    "@types/http-errors": "^1.8.2",
+    "@types/node": "16.x",
+    "@types/ws": "^8.5.3",
+    "archiver": "^5.3.1",
+    "dotenv": "^16.0.3",
+    "libsodium-wrappers": "^0.7.11",
+    "open": "^8.4.2",
+    "typescript": "^4.0.0",
+    "xmlbuilder2": "^3.0.2",
+    "zx": "^7.2.0"
+  }
 }
