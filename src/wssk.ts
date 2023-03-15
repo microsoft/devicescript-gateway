@@ -11,7 +11,12 @@ import {
 } from "./schema"
 import { displayName, runInBg, tryParseJSON } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
-import { contextTagKeys, devsTelemetry, serverTelemetry } from "./appinsights"
+import {
+    contextTagKeys,
+    devsTelemetry,
+    logLineToTraceTelemetry,
+    serverTelemetry,
+} from "./appinsights"
 import {
     EventTelemetry,
     MetricTelemetry,
@@ -579,15 +584,22 @@ export class ConnectedDevice {
         )
     }
 
-    public traceTrace(message: string, options: Partial<TraceTelemetry> = {}) {
-        if (!message) return
-        this.track(
-            {
-                message,
-                ...options,
-            },
-            TelemetryType.Trace
-        )
+    public traceTrace(
+        messages: string[],
+        options: Partial<TraceTelemetry> = {}
+    ) {
+        messages
+            .map(logLineToTraceTelemetry)
+            .filter(t => !!t)
+            .forEach(telemetry => {
+                this.track(
+                    {
+                        ...options,
+                        ...telemetry,
+                    } as TraceTelemetry,
+                    TelemetryType.Trace
+                )
+            })
     }
 
     private trackWarning(message: string) {

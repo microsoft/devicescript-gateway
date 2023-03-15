@@ -1,7 +1,11 @@
 import * as mq from "./mq"
 import * as appInsights from "applicationinsights"
-import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
+import {
+    ContextTagKeys,
+    TraceTelemetry,
+} from "applicationinsights/out/Declarations/Contracts"
 import { registerLogSink, registerMessageSink } from "./messages"
+import { Contracts } from "applicationinsights"
 
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
@@ -34,7 +38,7 @@ export async function setup() {
         name: "server.start",
     })
 
-    registerLogSink(async (logs, device) => device.traceTrace(logs.join("\n")))
+    registerLogSink(async (logs, device) => device.traceTrace(logs))
     registerMessageSink({
         name: "app insights events",
         topicName: "tev",
@@ -96,3 +100,19 @@ export function devsTelemetry(): appInsights.TelemetryClient {
 }
 
 export const contextTagKeys = new ContextTagKeys()
+
+const severities: Record<string, Contracts.SeverityLevel> = {
+    ">": Contracts.SeverityLevel.Information,
+    "!": Contracts.SeverityLevel.Error,
+    "*": Contracts.SeverityLevel.Warning,
+    "?": Contracts.SeverityLevel.Verbose,
+}
+
+export function logLineToTraceTelemetry(line: string) {
+    const severity = severities[line?.[0]]
+    if (!severity) return undefined
+    return {
+        message: line.slice(1),
+        severity,
+    } as Partial<TraceTelemetry>
+}
