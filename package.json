@@ -26,6 +26,7 @@
         }
     },
     "scripts": {
+        "setup": "git submodule update --init --recursive && git pull && yarn install --frozen-lockfile",
         "build": "nx run-many --target=build"
     }
 }
