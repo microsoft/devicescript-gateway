@@ -17,9 +17,10 @@ import {
     MetricTelemetry,
     Telemetry,
     TelemetryType,
+    TraceTelemetry,
 } from "applicationinsights/out/Declarations/Contracts"
 import { WsskCmd, WsskDataType } from "./interop"
-import { ingestMessage } from "./messages"
+import { ingestLogs, ingestMessage } from "./messages"
 import { WsskStreamingType } from "../../../devicescript/interop/src/interop"
 
 const JD_AES_CCM_TAG_BYTES = 4
@@ -479,8 +480,12 @@ export class ConnectedDevice {
             case WsskCmd.Dmesg: {
                 const { buf, lines } = splitLines(this.logBuffer, payload)
                 this.logBuffer = buf
-                if (lines.length)
-                    await this.notify({ type: "logs", logs: lines })
+                if (lines.length) {
+                    await Promise.all([
+                        ingestLogs(lines, this),
+                        this.notify({ type: "logs", logs: lines }),
+                    ])
+                }
             }
             default:
                 if (!(await this.deployStep(cmd, payload)))
@@ -565,11 +570,6 @@ export class ConnectedDevice {
     }
 
     public trackMetric(name: string, options: Partial<MetricTelemetry>) {
-        console.log(`metric`, {
-            name,
-            kind: "Aggregation",
-            ...options,
-        })
         this.track(
             {
                 name,
@@ -577,6 +577,17 @@ export class ConnectedDevice {
                 ...options,
             },
             TelemetryType.Metric
+        )
+    }
+
+    public traceTrace(message: string, options: Partial<TraceTelemetry> = {}) {
+        if (!message) return
+        this.track(
+            {
+                message,
+                ...options,
+            },
+            TelemetryType.Trace
         )
     }
 

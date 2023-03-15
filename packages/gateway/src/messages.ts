@@ -50,3 +50,12 @@ export async function ingestMessage(
     // dispatch
     await Promise.all(sinks.map(sink => sink.ingest(message, device)))
 }
+
+export type LogSink = (logs: string[], device: ConnectedDevice) => Promise<void>
+const logSinks: LogSink[] = []
+export function registerLogSink(sink: LogSink) {
+    logSinks.push(sink)
+}
+export async function ingestLogs(logs: string[], device: ConnectedDevice) {
+    await Promise.all(logSinks.map(sink => sink(logs, device)))
+}

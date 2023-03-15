@@ -1,7 +1,7 @@
 import * as mq from "./mq"
 import * as appInsights from "applicationinsights"
 import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts"
-import { registerMessageSink } from "./messages"
+import { registerLogSink, registerMessageSink } from "./messages"
 
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
@@ -14,12 +14,12 @@ export async function setup() {
 
     appInsights
         .setup(connString)
-        .setAutoDependencyCorrelation(true)
-        .setAutoCollectRequests(true)
-        .setAutoCollectPerformance(true, true)
+        .setAutoDependencyCorrelation(false)
+        .setAutoCollectRequests(false)
+        .setAutoCollectPerformance(false)
         .setAutoCollectExceptions(true)
-        .setAutoCollectDependencies(true)
-        .setAutoCollectConsole(true, true)
+        .setAutoCollectDependencies(false)
+        .setAutoCollectConsole(false)
         .setUseDiskRetryCaching(true)
         .setAutoCollectPreAggregatedMetrics(true)
         .setSendLiveMetrics(false)
@@ -34,6 +34,7 @@ export async function setup() {
         name: "server.start",
     })
 
+    registerLogSink(async (logs, device) => device.traceTrace(logs.join("\n")))
     registerMessageSink({
         name: "app insights events",
         topicName: "tev",
@@ -51,7 +52,6 @@ export async function setup() {
             device.trackEvent(`devs.${name}`, { properties, measurements })
         },
     })
-
     registerMessageSink({
         name: "app insights metrics",
         topicName: "tme",
