@@ -40,6 +40,18 @@ export async function setup() {
 
     registerLogSink(async (logs, device) => device.traceTrace(logs))
     registerMessageSink({
+        name: "app insights exception",
+        topicName: "tex",
+        ingest: async (message, device) => {
+            const { e: lines, m: measurements } = message as object as {
+                e: string[]
+                m?: Record<string, number>
+            }
+
+            device.traceException(lines, { measurements })
+        },
+    })
+    registerMessageSink({
         name: "app insights events",
         topicName: "tev",
         ingest: async (message, device) => {

@@ -19,6 +19,7 @@ import {
 } from "./appinsights"
 import {
     EventTelemetry,
+    ExceptionTelemetry,
     MetricTelemetry,
     Telemetry,
     TelemetryType,
@@ -517,6 +518,7 @@ export class ConnectedDevice {
             this.exnBuffer = null
             if (this.exnLines?.length) {
                 this.log.info(`exception: ${this.exnLines.join("\n")}`)
+                this.traceException(this.exnLines, {})
                 await this.notify({
                     type: "exn",
                     logs: this.exnLines,
@@ -600,6 +602,36 @@ export class ConnectedDevice {
                     TelemetryType.Trace
                 )
             })
+    }
+
+    public traceException(exn: string[], options: Partial<ExceptionTelemetry>) {
+        console.log(`trace exception`)
+        console.log(exn)
+        const { measurements = {}, ...rest } = options
+        const deviceMeasurements: any = {}
+        if (this.deployNumFail)
+            deviceMeasurements.deployNumFail = this.deployNumFail
+
+        const name = "Error"
+        const message = exn[0]
+        const stack = exn.slice(1).join("\n")
+        const exception: Error = {
+            name,
+            message,
+            stack,
+        }
+        console.log(exception)
+        this.track(
+            {
+                ...rest,
+                measurements: {
+                    ...measurements,
+                    ...deviceMeasurements,
+                },
+                exception,
+            } as ExceptionTelemetry,
+            TelemetryType.Exception
+        )
     }
 
     private trackWarning(message: string) {
