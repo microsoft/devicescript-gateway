@@ -5,7 +5,7 @@
   "license": "MIT",
   "private": true,
   "files": [
-    "dist/**"
+    "./dist/**"
   ],
   "scripts": {
     "setup": "git submodule update --init --recursive && git pull && yarn install --frozen-lockfile",
