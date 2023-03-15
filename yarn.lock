@@ -374,10 +374,10 @@
     readable-stream "^4.0.0"
     send "^0.18.0"
 
-"@fastify/websocket@^7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@fastify/websocket/-/websocket-7.1.0.tgz#9ce883f7639653df556dceeb97b86f04ea8e05e7"
-  integrity sha512-aEHlymGnMOCY5pTSI6gOlLBX/5pIhQ485zyEx/m2+kITSa9vWtL08jbtAzbsaQBcqOz+bbVvxzerbHZdqQp2qQ==
+"@fastify/websocket@^7.1.1":
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/@fastify/websocket/-/websocket-7.1.1.tgz#dfaba447f846db7432b6f9f81c8fb73e6cc470a6"
+  integrity sha512-8lvB/E6p/o3MlmHzM2NJ19ixteI6Ckw0xOebLfoHoORPmpvCWqSp8+HLz4Gc6HrChH4vM9VcSWAK8jYuTT08hQ==
   dependencies:
     fastify-plugin "^4.0.0"
     ws "^8.0.0"
