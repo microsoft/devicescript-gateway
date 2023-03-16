@@ -10,7 +10,7 @@ import {
 } from "./util"
 import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
-import { fullDeviceId, pubToDevice } from "./devutil"
+import { fullDeviceId, pingDevice, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
 
 const CONNECTED_TIMEOUT = 2 * 60 * 1000
@@ -157,6 +157,14 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
 }
 
 export async function initHubRoutes(server: FastifyInstance) {
+    server.post("/devices/:deviceId/ping", async req => {
+        const devid = getDeviceIdFromParams(req)
+        const duration = await pingDevice(devid)
+        return {
+            duration,
+        }
+    })
+
     server.post("/devices/:deviceId/json", async req => {
         const devid = getDeviceIdFromParams(req)
         const topic = (req.body as any)["$topic"]

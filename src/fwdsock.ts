@@ -5,12 +5,7 @@ import { getDeviceFromFullPath } from "./apidevices"
 import { DeviceInfo, FromDeviceMessage, ToDeviceMessage } from "./schema"
 import { websockDataToBuffer } from "./wssk"
 import { runInBg } from "./util"
-import {
-    pubToDevice,
-    subFromDevice,
-    isDeviceConnected,
-    fullDeviceId,
-} from "./devutil"
+import { pubToDevice, subFromDevice, pingDevice, fullDeviceId } from "./devutil"
 import type { SideDeviceMessage } from "./interop"
 
 function sha256(data: string) {
@@ -92,8 +87,11 @@ export async function fwdSockInitRoute(
                 return error("token expired")
             if (tokenSig(dev, time) != m[2]) return error("bad sig")
 
-            if (!(await isDeviceConnected(dev)))
-                return error(`device ${dev.partitionKey}/${dev.rowKey}  not connected`)
+            const ping = await pingDevice(dev)
+            if (ping < 0)
+                return error(
+                    `device ${dev.partitionKey}/${dev.rowKey}  not connected`
+                )
 
             function enableFwd() {
                 if (closed) return

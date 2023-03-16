@@ -162,6 +162,24 @@ export function generateOpenApiSpec() {
     )
 
     post(
+        "/devices/{deviceId}/ping",
+        action(
+            "Pinf",
+            "Pings a device",
+            "Tries to ping the device to test the connection",
+            [pPath("deviceId", devIdParam)],
+            {
+                "200": response(
+                    "Ping result",
+                    sObj({
+                        duration: sNumber("Duration in ms, -1 if timeout"),
+                    })
+                ),
+            }
+        )
+    )
+
+    post(
         "/devices/{deviceId}/json",
         action(
             "SendJSON",
