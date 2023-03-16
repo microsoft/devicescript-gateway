@@ -2,7 +2,7 @@ import { FastifyBaseLogger, FastifyInstance } from "fastify"
 import * as crypto from "crypto"
 import * as storage from "./storage"
 import { getDeviceFromFullPath } from "./apidevices"
-import { DeviceInfo, FromDeviceMessage } from "./schema"
+import { DeviceInfo, FromDeviceMessage, ToDeviceMessage } from "./schema"
 import { websockDataToBuffer } from "./wssk"
 import { runInBg } from "./util"
 import {
@@ -55,59 +55,74 @@ export function fwdSockConnSettings(
 function noop() {}
 
 export async function fwdSockInit(server: FastifyInstance) {
-    await fwdSockInitRoute(server, "devfwd", async (conn, dev, log, error) => {
-        const unsub = await subFromDevice(
-            dev,
-            async (msg: FromDeviceMessage) => {
-                if (msg.type === "frame") {
-                    conn.socket.send(Buffer.from(msg.payload64, "base64"))
+    await fwdSockInitRoute(
+        server,
+        "devfwd",
+        { forwarding: true },
+        { forwarding: false },
+        async (conn, dev, log, error) => {
+            const unsub = await subFromDevice(
+                dev,
+                async (msg: FromDeviceMessage) => {
+                    if (msg.type === "frame") {
+                        conn.socket.send(Buffer.from(msg.payload64, "base64"))
+                    }
                 }
-            }
-        )
-        conn.socket.on("message", (msg, isBin) => {
-            try {
-                if (conn.socket.readyState !== conn.socket.OPEN) return
-                if (!isBin) return error("not binary")
+            )
+            conn.socket.on("message", (msg, isBin) => {
+                try {
+                    if (conn.socket.readyState !== conn.socket.OPEN) return
+                    if (!isBin) return error("not binary")
 
-                const frame = websockDataToBuffer(msg)
-                if (frame.length > 256) return error("too large frame")
+                    const frame = websockDataToBuffer(msg)
+                    if (frame.length > 256) return error("too large frame")
 
-                runInBg(
-                    log,
-                    "send-frame",
-                    pubToDevice(dev, {
-                        type: "frameTo",
-                        payload64: frame.toString("base64"),
-                    })
-                )
-            } catch (e: any) {
-                log.error(`message handler: ${e.message}`)
-            }
-        })
-        return unsub
-    })
-    await fwdSockInitRoute(server, "devlogs", async (conn, dev, log, error) => {
-        const unsub = await subFromDevice(
-            dev,
-            async (msg: FromDeviceMessage) => {
-                if (msg.type !== "frame") conn.socket.send(msg)
-            }
-        )
-        conn.socket.on("message", (msg, isBin) => {
-            try {
-                if (conn.socket.readyState !== conn.socket.OPEN) return
-                console.log(`received...`)
-            } catch (e: any) {
-                log.error(`message handler: ${e.message}`)
-            }
-        })
-        return unsub
-    })
+                    runInBg(
+                        log,
+                        "send-frame",
+                        pubToDevice(dev, {
+                            type: "frameTo",
+                            payload64: frame.toString("base64"),
+                        })
+                    )
+                } catch (e: any) {
+                    log.error(`message handler: ${e.message}`)
+                }
+            })
+            return unsub
+        }
+    )
+    await fwdSockInitRoute(
+        server,
+        "devlogs",
+        { logging: true },
+        { logging: false },
+        async (conn, dev, log, error) => {
+            const unsub = await subFromDevice(
+                dev,
+                async (msg: FromDeviceMessage) => {
+                    if (msg.type !== "frame") conn.socket.send(msg)
+                }
+            )
+            conn.socket.on("message", (msg, isBin) => {
+                try {
+                    if (conn.socket.readyState !== conn.socket.OPEN) return
+                    console.log(`received...`)
+                    console.log(msg)
+                } catch (e: any) {
+                    log.error(`message handler: ${e.message}`)
+                }
+            })
+            return unsub
+        }
+    )
 }
 
 export async function fwdSockInitRoute(
     server: FastifyInstance,
     route: "devfwd" | "devlogs",
+    fwdMsg: { forwarding?: boolean; logging?: boolean },
+    unfwdMsg: { forwarding?: boolean; logging?: boolean },
     register: (
         conn: SocketStream,
         dev: DeviceInfo,
@@ -146,8 +161,8 @@ export async function fwdSockInitRoute(
                 if (closed) return
                 runInBg(
                     log,
-                    "enfwd",
-                    pubToDevice(dev, { type: "setfwd", forwarding: true })
+                    `enfwd${route}`,
+                    pubToDevice(dev, { type: "setfwd", ...fwdMsg })
                 )
                 setTimeout(enableFwd, 5000)
             }
@@ -175,7 +190,7 @@ export async function fwdSockInitRoute(
                 const f = unsub
                 unsub = noop
                 f()
-                pubToDevice(dev, { type: "setfwd", forwarding: false })
+                pubToDevice(dev, { type: "setfwd", ...unfwdMsg })
                 if (!closed) {
                     closed = true
                     conn.socket.close(1000, msg || "") // just in case
