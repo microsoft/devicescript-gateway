@@ -14,6 +14,7 @@ import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
 import { createSecretClient } from "./vault"
 import { DebugInfo } from "./interop"
+import { createHash } from "crypto"
 
 const suff = "4"
 
@@ -21,6 +22,7 @@ let devicesTable: TableClient
 let messageHooksTable: TableClient
 let scriptsTable: TableClient
 let scriptVersionsTable: TableClient
+let scriptVersionShaTable: TableClient
 let blobClient: BlobServiceClient
 let scriptsBlobs: ContainerClient
 
@@ -71,6 +73,10 @@ export async function setup() {
         connStr,
         "scrver" + suff
     )
+    scriptVersionShaTable = TableClient.fromConnectionString(
+        connStr,
+        "scrversha" + suff
+    )
 
     blobClient = BlobServiceClient.fromConnectionString(connStr)
     scriptsBlobs = blobClient.getContainerClient("scripts" + suff)
@@ -79,6 +85,7 @@ export async function setup() {
     await messageHooksTable.createTable()
     await scriptsTable.createTable()
     await scriptVersionsTable.createTable()
+    await scriptVersionShaTable.createTable()
     await scriptsBlobs.createIfNotExists()
 
     if (false) {
@@ -269,6 +276,7 @@ interface ScriptInfo {
     name: string
     metaJSON: string
     updated: number
+    sha?: string
 }
 
 export interface ScriptHeader {
@@ -328,6 +336,49 @@ export async function getScript(
     return toUserScript(
         await scriptVersionsTable.getEntity(scriptId, versionKey(verId)),
         primary
+    )
+}
+
+const SHA_PART = "sha"
+function binarySha(hex: string) {
+    const s = createHash("sha256")
+    s.update(Buffer.from(hex, "hex"))
+    const sha = s.digest("hex")
+    return sha
+}
+
+export async function resolveScriptBodyFromSha(
+    sha: string
+): Promise<ScriptBody> {
+    if (!sha) return undefined
+
+    // check sha format, roundtrip throug buffer parser
+    sha = Buffer.from(sha, "hex").toString("hex")
+
+    const res = await scriptVersionShaTable.getEntity(SHA_PART, sha)
+    if (!res) return undefined
+
+    const scriptId = res.scriptId as string
+    const scriptVersion = res.scriptVersion as number
+    return await getScriptBody(scriptId, scriptVersion)
+}
+
+async function upsertScriptVersionShaSnapshot(
+    scriptId: string,
+    scriptVersion: number,
+    sha: string
+) {
+    // check sha format, roundtrip throug buffer parser
+    sha = Buffer.from(sha, "hex").toString("hex")
+    // TODO: avoid sha collisions
+    await scriptVersionShaTable.upsertEntity(
+        {
+            partitionKey: SHA_PART,
+            rowKey: sha,
+            scriptId,
+            scriptVersion,
+        },
+        "Replace"
     )
 }
 
@@ -432,6 +483,11 @@ export async function updateScript(
     }
 
     const body = updates.body || (await getScriptBody(scr.id, scr.version))
+    const sha = binarySha(body?.program?.binary?.hex)
+    if (sha) {
+        await upsertScriptVersionShaSnapshot(scr.id, newVersion, sha)
+        info.sha = sha
+    }
     await createScriptSnapshot(scr.id, newVersion, body)
 
     if (newVersion == 1) await scriptsTable.createEntity(info)
