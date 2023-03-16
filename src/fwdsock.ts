@@ -1,4 +1,4 @@
-import { FastifyBaseLogger, FastifyInstance } from "fastify"
+import { FastifyInstance } from "fastify"
 import * as crypto from "crypto"
 import * as storage from "./storage"
 import { getDeviceFromFullPath } from "./apidevices"
@@ -11,7 +11,7 @@ import {
     isDeviceConnected,
     fullDeviceId,
 } from "./devutil"
-import { SocketStream } from "@fastify/websocket"
+import type { SideDeviceMessage } from "./interop"
 
 function sha256(data: string) {
     const s = crypto.createHash("sha256")
@@ -108,7 +108,15 @@ export async function fwdSockInitRoute(
             unsub = await subFromDevice(dev, async (msg: FromDeviceMessage) => {
                 if (forwarding && msg.type === "frame")
                     conn.socket.send(Buffer.from(msg.payload64, "base64"))
-                if (logging && msg.type !== "frame") conn.socket.send(msg)
+                if (logging && msg.type !== "frame") {
+                    switch (msg.type) {
+                        case "logs":
+                        case "uploadBin":
+                        case "uploadJson":
+                            conn.socket.send(msg as SideDeviceMessage)
+                            break
+                    }
+                }
             })
             if (forwarding)
                 conn.socket.on("message", (msg, isBin) => {
