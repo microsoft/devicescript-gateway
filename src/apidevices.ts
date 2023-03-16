@@ -13,10 +13,11 @@ import { wsskConnString } from "./wssk"
 import { fullDeviceId, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
 
+const CONNECTED_TIMEOUT = 2 * 60 * 1000
 export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
 
 function externalDevice(info: DeviceInfo) {
-    const conn = Date.now() - info.lastAct < 2 * 60 * 1000
+    const conn = Date.now() - info.lastAct < CONNECTED_TIMEOUT
     return {
         partition: info.partitionKey,
         id: info.rowKey,

@@ -93,7 +93,7 @@ export async function fwdSockInitRoute(
             if (tokenSig(dev, time) != m[2]) return error("bad sig")
 
             if (!(await isDeviceConnected(dev)))
-                return error("device not connected")
+                return error(`device ${dev.partitionKey}/${dev.rowKey}  not connected`)
 
             function enableFwd() {
                 if (closed) return
