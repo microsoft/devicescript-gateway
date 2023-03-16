@@ -10,13 +10,14 @@ import {
 } from "./util"
 import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
-import { fullDeviceId, pubToDevice } from "./devutil"
+import { fullDeviceId, pingDevice, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
 
+const CONNECTED_TIMEOUT = 2 * 60 * 1000
 export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
 
 function externalDevice(info: DeviceInfo) {
-    const conn = Date.now() - info.lastAct < 2 * 60 * 1000
+    const conn = Date.now() - info.lastAct < CONNECTED_TIMEOUT
     return {
         partition: info.partitionKey,
         id: info.rowKey,
@@ -156,6 +157,14 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
 }
 
 export async function initHubRoutes(server: FastifyInstance) {
+    server.post("/devices/:deviceId/ping", async req => {
+        const devid = getDeviceIdFromParams(req)
+        const duration = await pingDevice(devid)
+        return {
+            duration,
+        }
+    })
+
     server.post("/devices/:deviceId/json", async req => {
         const devid = getDeviceIdFromParams(req)
         const topic = (req.body as any)["$topic"]
@@ -231,7 +240,13 @@ export async function initHubRoutes(server: FastifyInstance) {
     server.get("/devices/:deviceId/fwd", async req => {
         const devid = getDeviceIdFromParams(req)
         const dev = await storage.getDevice(devid)
-        return fwdSockConnSettings(dev)
+        return fwdSockConnSettings(dev, "devfwd")
+    })
+
+    server.get("/devices/:deviceId/logs", async req => {
+        const devid = getDeviceIdFromParams(req)
+        const dev = await storage.getDevice(devid)
+        return fwdSockConnSettings(dev, "devlogs")
     })
 
     server.patch("/devices/:deviceId", async req => {

@@ -162,6 +162,24 @@ export function generateOpenApiSpec() {
     )
 
     post(
+        "/devices/{deviceId}/ping",
+        action(
+            "Pinf",
+            "Pings a device",
+            "Tries to ping the device to test the connection",
+            [pPath("deviceId", devIdParam)],
+            {
+                "200": response(
+                    "Ping result",
+                    sObj({
+                        duration: sNumber("Duration in ms, -1 if timeout"),
+                    })
+                ),
+            }
+        )
+    )
+
+    post(
         "/devices/{deviceId}/json",
         action(
             "SendJSON",
@@ -261,6 +279,28 @@ export function generateOpenApiSpec() {
             "DeviceFwdSocket",
             "Get Forwarding Socket for Device",
             "Get a connection for direct talk with the Jacdac bus connected to the device",
+            [pPath("deviceId", devIdParam)],
+            {
+                "200": response(
+                    "Connection info",
+                    sObj({
+                        url: sString("wss://... URL"),
+                        protocol: sString(
+                            "Pass as argument to new WebSocket()"
+                        ),
+                        expires: sNumber("JS timestamp"),
+                    })
+                ),
+            }
+        )
+    )
+
+    get(
+        "/devices/{deviceId}/logs",
+        action(
+            "DeviceLogsSocket",
+            "Get Log Forwarding Socket for Device",
+            "Get a connection for receiving logs from a device",
             [pPath("deviceId", devIdParam)],
             {
                 "200": response(

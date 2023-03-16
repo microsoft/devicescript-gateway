@@ -6,5 +6,10 @@ export {
     RoleDebugInfo,
     VarDebugInfo,
     SrcMap,
-    WsskStreamingType
+    WsskStreamingType,
+    SideDeviceMessage,
+    SideLogsFromDevice,
+    SideUploadBinFromDevice,
+    SideUploadJsonFromDevice,
+    SideExceptionFromDevice,
 } from "../devicescript/interop/src/interop"

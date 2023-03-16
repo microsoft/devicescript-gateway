@@ -13,10 +13,8 @@ export function untilFromDevice(
     return mq.until("from-dev/" + fullDeviceId(id), timeoutMS, cb)
 }
 
-export async function isDeviceConnected(
-    id: DeviceId,
-    timeoutMS: number = 5 * 1000
-) {
+export async function pingDevice(id: DeviceId, timeoutMS: number = 5 * 1000) {
+    let start = Date.now()
     await pubToDevice(id, {
         type: "ping",
     })
@@ -29,7 +27,8 @@ export async function isDeviceConnected(
         r => r,
         _ => null
     )
-    return res != null
+    const end = Date.now()
+    return res != null ? end - start : -1
 }
 
 export function subToDevice(
