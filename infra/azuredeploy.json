@@ -295,7 +295,7 @@
                     "alwaysOn": "[variables('webAppAlwaysOn')]",
                     "logsDirectorySizeLimit": 35,
                     "apiDefinition": {
-                        "url": "/swagger/"
+                        "url": "[concat('https://', variables('webAppName') ,'.azurewebsites.net/swagger/api.json')]"
                     },
                     "appSettings": [
                         {
