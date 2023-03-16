@@ -218,7 +218,7 @@
             "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
             "dependsOn": ["[variables('keyVaultId')]"],
             "properties": {
-                "value": "[concat('ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net;Subscription=', variables('subscriptionId'), ';ResourceGroup=', variables('resourceGroupId'))]"
+                "value": "[concat('ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net;Subscription=', variables('subscriptionId'), ';ResourceGroup=', resourceGroup().name)]"
             }
         },
         {
