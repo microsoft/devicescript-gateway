@@ -23,7 +23,7 @@ echo(chalk.blue(`gateway version: ${gatewayVersion}`))
 
 // resolve subscript
 let subscription = JSON.parse((await $`az account show`).stdout)
-if (true) {//&& !subscription?.isDefault) {
+if (!subscription?.isDefault) {
     echo(chalk.blue(`Searching for subscriptions...`))
     const subscriptions = JSON.parse((await $`az account list`).stdout)
     const name = await question("Pick a subscription: ", { choices: subscriptions.map(s => s.name) })
@@ -41,7 +41,7 @@ let resourceLocation = process.env["DEVS_LOCATION"]
 if (!resourceLocation) {
     echo(chalk.blue("Searching for available Azure locations..."))
     const locations = JSON.parse(
-        (await $`az account list-locations --subscription ${subscriptionId}`).stdout
+        (await $`az account list-locations`).stdout
     ).filter(l => !l.name.includes("stage"))
     locations.sort((a, b) =>
         a.regionalDisplayName < b.regionalDisplayName ? -1 : 1
@@ -127,17 +127,12 @@ fs.writeFileSync(parameterFile, JSON.stringify({
 
 const rsinfo = JSON.parse((await $`az group create --subscription ${subscriptionId} --name ${resourceGroup} --location ${resourceLocation}`).stdout)
 
-echo(chalk.blue(`Resource group: ${rsinfo.name}, ${rsinfo.id}`))
+echo(chalk.blue(`Resource group: ${rsinfo.name} (${rsinfo.id})`))
 
 // create resources
-const deploymentName = "devicescript"
+const deploymentName = `${namePrefix}devicescriptdeployment`
 const templateFile = "azuredeploy.json"
-const dinfo = JSON.parse((await $`az deployment group create \
-  --name ${deploymentName} \
-  --subscription ${subscriptionId} \
-  --resource-group ${resourceGroup} \
-  --template-file ${templateFile} \
-  --parameters ${parameterFile}`).stdout)
+const dinfo = JSON.parse((await $`az deployment group create --name ${deploymentName} --subscription ${subscriptionId} --resource-group ${resourceGroup} --template-file ${templateFile} --parameters ${parameterFile}`).stdout)
 const { outputs } = dinfo.properties
 const webAppName = outputs.webAppName.value
 const keyVaultName = outputs.keyVaultName.value
@@ -170,6 +165,7 @@ DEVS_SWAGGER_URL="${homepage}"
 if (octokit) {
     // download publish profile
     echo(chalk.blue('Download publish profile...'))
+    await sleep(1000)
     const pb = JSON.parse((await $`az webapp deployment list-publishing-profiles --subscription ${subscriptionId} --name ${webAppName} --resource-group ${resourceGroup}`).stdout)
     const zpd = pb?.find(o => o.publishMethod === "ZipDeploy")
     if (!zpd) throw "failed to fetch zip deploy publishing profile"
