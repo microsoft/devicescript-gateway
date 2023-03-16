@@ -231,7 +231,13 @@ export async function initHubRoutes(server: FastifyInstance) {
     server.get("/devices/:deviceId/fwd", async req => {
         const devid = getDeviceIdFromParams(req)
         const dev = await storage.getDevice(devid)
-        return fwdSockConnSettings(dev)
+        return fwdSockConnSettings(dev, "devfwd")
+    })
+
+    server.get("/devices/:deviceId/logs", async req => {
+        const devid = getDeviceIdFromParams(req)
+        const dev = await storage.getDevice(devid)
+        return fwdSockConnSettings(dev, "devlogs")
     })
 
     server.patch("/devices/:deviceId", async req => {

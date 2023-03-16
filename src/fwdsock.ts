@@ -1,8 +1,8 @@
-import { FastifyInstance } from "fastify"
+import { FastifyBaseLogger, FastifyInstance } from "fastify"
 import * as crypto from "crypto"
 import * as storage from "./storage"
 import { getDeviceFromFullPath } from "./apidevices"
-import { DeviceInfo } from "./schema"
+import { DeviceInfo, FromDeviceMessage } from "./schema"
 import { websockDataToBuffer } from "./wssk"
 import { runInBg } from "./util"
 import {
@@ -11,6 +11,7 @@ import {
     isDeviceConnected,
     fullDeviceId,
 } from "./devutil"
+import { SocketStream } from "@fastify/websocket"
 
 function sha256(data: string) {
     const s = crypto.createHash("sha256")
@@ -30,11 +31,18 @@ function nowSeconds() {
     return Math.floor(Date.now() / 1000)
 }
 
-export function fwdSockConnSettings(dev: DeviceInfo) {
+export function fwdSockConnSettings(
+    dev: DeviceInfo,
+    route: "devfwd" | "devlogs"
+) {
     const n = nowSeconds()
     const protocol = "mgmt-" + n + "-" + tokenSig(dev, n)
     const url =
-        storage.selfUrl().replace("http", "ws") + "/devfwd/" + fullDeviceId(dev)
+        storage.selfUrl().replace("http", "ws") +
+        "/" +
+        route +
+        "/" +
+        fullDeviceId(dev)
 
     return {
         url,
@@ -47,8 +55,68 @@ export function fwdSockConnSettings(dev: DeviceInfo) {
 function noop() {}
 
 export async function fwdSockInit(server: FastifyInstance) {
+    await fwdSockInitRoute(server, "devfwd", async (conn, dev, log, error) => {
+        const unsub = await subFromDevice(
+            dev,
+            async (msg: FromDeviceMessage) => {
+                if (msg.type === "frame") {
+                    conn.socket.send(Buffer.from(msg.payload64, "base64"))
+                }
+            }
+        )
+        conn.socket.on("message", (msg, isBin) => {
+            try {
+                if (conn.socket.readyState !== conn.socket.OPEN) return
+                if (!isBin) return error("not binary")
+
+                const frame = websockDataToBuffer(msg)
+                if (frame.length > 256) return error("too large frame")
+
+                runInBg(
+                    log,
+                    "send-frame",
+                    pubToDevice(dev, {
+                        type: "frameTo",
+                        payload64: frame.toString("base64"),
+                    })
+                )
+            } catch (e: any) {
+                log.error(`message handler: ${e.message}`)
+            }
+        })
+        return unsub
+    })
+    await fwdSockInitRoute(server, "devlogs", async (conn, dev, log, error) => {
+        const unsub = await subFromDevice(
+            dev,
+            async (msg: FromDeviceMessage) => {
+                if (msg.type !== "frame") conn.socket.send(msg)
+            }
+        )
+        conn.socket.on("message", (msg, isBin) => {
+            try {
+                if (conn.socket.readyState !== conn.socket.OPEN) return
+                console.log(`received...`)
+            } catch (e: any) {
+                log.error(`message handler: ${e.message}`)
+            }
+        })
+        return unsub
+    })
+}
+
+export async function fwdSockInitRoute(
+    server: FastifyInstance,
+    route: "devfwd" | "devlogs",
+    register: (
+        conn: SocketStream,
+        dev: DeviceInfo,
+        log: FastifyBaseLogger,
+        error: (msg: string) => void
+    ) => Promise<() => void>
+) {
     server.get(
-        "/devfwd/:partId/:deviceId",
+        `/${route}/:partId/:deviceId`,
         { websocket: true },
         async (conn, req) => {
             let closed = false
@@ -84,34 +152,7 @@ export async function fwdSockInit(server: FastifyInstance) {
                 setTimeout(enableFwd, 5000)
             }
             enableFwd()
-
-            unsub = await subFromDevice(dev, async msg => {
-                if (msg.type == "frame") {
-                    conn.socket.send(Buffer.from(msg.payload64, "base64"))
-                }
-            })
-
-            conn.socket.on("message", (msg, isBin) => {
-                try {
-                    if (closed) return
-                    if (!isBin) return error("not binary")
-
-                    const frame = websockDataToBuffer(msg)
-                    if (frame.length > 256) return error("too large frame")
-
-                    runInBg(
-                        log,
-                        "send-frame",
-                        pubToDevice(dev, {
-                            type: "frameTo",
-                            payload64: frame.toString("base64"),
-                        })
-                    )
-                } catch (e: any) {
-                    log.error(`message handler: ${e.message}`)
-                }
-            })
-
+            unsub = await register(conn, dev, log, error)
             conn.socket.on("error", err => {
                 log.warn(`websock error: ${err.message}`)
                 closeIt()
