@@ -219,7 +219,7 @@
             "name": "[concat(variables('keyVaultName'), '/', variables('adminConnectionStringSecretName'))]",
             "dependsOn": ["[variables('keyVaultId')]"],
             "properties": {
-                "value": "[concat('AccountName=', variables('adminName') ,';AccountKey=,', parameters('adminPassword') ,';ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net;Subscription=', variables('subscriptionId'), ';ResourceGroup=', resourceGroup().name)]"
+                "value": "[concat('AccountName=', variables('adminName') ,';AccountKey=', parameters('adminPassword') ,';ApiRoot=https://', variables('webAppName') ,'.azurewebsites.net;Subscription=', variables('subscriptionId'), ';ResourceGroup=', resourceGroup().name)]"
             }
         },
         {
