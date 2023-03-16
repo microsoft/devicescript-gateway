@@ -6,7 +6,7 @@ import { DeviceInfo, FromDeviceMessage, ToDeviceMessage } from "./schema"
 import { websockDataToBuffer } from "./wssk"
 import { runInBg } from "./util"
 import { pubToDevice, subFromDevice, pingDevice, fullDeviceId } from "./devutil"
-import type { SideDeviceMessage } from "./interop"
+import type { SideLogsFromDevice } from "./interop"
 
 function sha256(data: string) {
     const s = crypto.createHash("sha256")
@@ -109,9 +109,15 @@ export async function fwdSockInitRoute(
                 if (logging && msg.type !== "frame") {
                     switch (msg.type) {
                         case "logs":
-                        case "uploadBin":
-                        case "uploadJson":
-                            conn.socket.send(msg as SideDeviceMessage)
+                            {
+                                conn.socket.send(
+                                    JSON.stringify({
+                                        type: "logs",
+                                        deviceId: msg.deviceId,
+                                        logs: msg.logs,
+                                    } as SideLogsFromDevice)
+                                )
+                            }
                             break
                     }
                 }
