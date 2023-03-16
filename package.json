@@ -39,7 +39,8 @@
     "node-fetch": "^2.6.7",
     "openapi-types": "^12.1.0",
     "pino-pretty": "^9.1.1",
-    "swagger-ui-dist": "^4.15.0"
+    "swagger-ui-dist": "^4.15.0",
+    "tslib": "^2.5.0"
   },
   "devDependencies": {
     "@octokit/core": "^4.2.0",

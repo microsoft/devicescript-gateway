@@ -294,6 +294,9 @@
                     "linuxFxVersion": "[variables('webAppLinuxFxVersion')]",
                     "alwaysOn": "[variables('webAppAlwaysOn')]",
                     "logsDirectorySizeLimit": 35,
+                    "apiDefinition": {
+                        "url": "/swagger/"
+                    },
                     "appSettings": [
                         {
                             "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -320,6 +323,33 @@
                             "value": "[variables('passwordsSecretName')]"
                         }
                     ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "[variables('webAppApiVersion')]",
+            "name": "[concat(variables('webAppName'), '/logs')]",
+            "location": "[variables('location')]",
+            "dependsOn": ["[variables('webAppId')]"],
+            "properties": {
+                "applicationLogs": {
+                    "fileSystem": {
+                        "level": "Verbose"
+                    }
+                },
+                "detailedErrorMessages": {
+                    "enabled": true
+                },
+                "failedRequestsTracing": {
+                    "enabled": true
+                },
+                "httpLogs": {
+                    "fileSystem": {
+                        "enabled": true,
+                        "retentionInDays": 7,
+                        "retentionInMb": 30
+                    }
                 }
             }
         }
