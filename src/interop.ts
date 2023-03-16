@@ -11,4 +11,5 @@ export {
     SideLogsFromDevice,
     SideUploadBinFromDevice,
     SideUploadJsonFromDevice,
+    SideExceptionFromDevice,
 } from "../devicescript/interop/src/interop"

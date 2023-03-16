@@ -2,11 +2,23 @@ import { FastifyInstance } from "fastify"
 import * as crypto from "crypto"
 import * as storage from "./storage"
 import { getDeviceFromFullPath } from "./apidevices"
-import { DeviceInfo, FromDeviceMessage, ToDeviceMessage } from "./schema"
+import {
+    DeviceInfo,
+    ExnFromDevice,
+    FromDeviceMessage,
+    LogsFromDevice,
+    UploadBinFromDevice,
+    UploadJsonFromDevice,
+} from "./schema"
 import { websockDataToBuffer } from "./wssk"
 import { runInBg } from "./util"
 import { pubToDevice, subFromDevice, pingDevice, fullDeviceId } from "./devutil"
-import type { SideLogsFromDevice } from "./interop"
+import type {
+    SideUploadBinFromDevice,
+    SideUploadJsonFromDevice,
+    SideExceptionFromDevice,
+    SideLogsFromDevice,
+} from "./interop"
 
 function sha256(data: string) {
     const s = crypto.createHash("sha256")
@@ -108,17 +120,55 @@ export async function fwdSockInitRoute(
                     conn.socket.send(Buffer.from(msg.payload64, "base64"))
                 if (logging && msg.type !== "frame") {
                     switch (msg.type) {
-                        case "logs":
-                            {
-                                conn.socket.send(
-                                    JSON.stringify({
-                                        type: "logs",
-                                        deviceId: msg.deviceId,
-                                        logs: msg.logs,
-                                    } as SideLogsFromDevice)
-                                )
-                            }
+                        case "uploadJson": {
+                            const m = msg as UploadJsonFromDevice
+                            conn.socket.send(
+                                JSON.stringify({
+                                    type: "uploadJson",
+                                    deviceId: m.deviceId,
+                                    topic: m.topic,
+                                    value: m.value,
+                                } as SideUploadJsonFromDevice)
+                            )
                             break
+                        }
+                        case "uploadBin": {
+                            const m = msg as UploadBinFromDevice
+                            conn.socket.send(
+                                JSON.stringify({
+                                    type: "uploadBin",
+                                    deviceId: m.deviceId,
+                                    topic: m.topic,
+                                    payload64: m.payload64,
+                                } as SideUploadBinFromDevice)
+                            )
+                            break
+                        }
+                        case "exn": {
+                            // TODO PARSE MESSAGE
+                            const m = msg as ExnFromDevice
+                            conn.socket.send(
+                                JSON.stringify({
+                                    type: "exception",
+                                    deviceId: m.deviceId,
+                                    message: m.logs[0],
+                                    name: "Error",
+                                    stack: m.logs.slice(1),
+                                } as SideExceptionFromDevice)
+                            )
+                            break
+                        }
+                        case "logs": {
+                            const m = msg as LogsFromDevice
+                            conn.socket.send(
+                                JSON.stringify({
+                                    type: "logs",
+                                    deviceId: m.deviceId,
+                                    logs: m.logs,
+                                } as SideLogsFromDevice)
+                            )
+                            break
+                        }
                     }
                 }
             })
