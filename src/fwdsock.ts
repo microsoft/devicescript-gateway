@@ -145,15 +145,15 @@ export async function fwdSockInitRoute(
                             break
                         }
                         case "exn": {
-                            // TODO PARSE MESSAGE
                             const m = msg as ExnFromDevice
                             conn.socket.send(
                                 JSON.stringify({
                                     type: "exception",
                                     deviceId: m.deviceId,
-                                    message: m.logs[0],
-                                    name: "Error",
-                                    stack: m.logs.slice(1),
+                                    message: msg.exn.message,
+                                    name: msg.exn.name,
+                                    stack: msg.exn.stack,
+                                    logs: msg.logs.join("\n"),
                                 } as SideExceptionFromDevice)
                             )
                             break

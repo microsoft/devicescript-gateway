@@ -25,7 +25,13 @@ import {
     TelemetryType,
     TraceTelemetry,
 } from "applicationinsights/out/Declarations/Contracts"
-import { WsskCmd, WsskDataType, WsskStreamingType } from "./interop"
+import {
+    DebugInfo,
+    WsskCmd,
+    WsskDataType,
+    WsskStreamingType,
+    parseStackFrame,
+} from "./interop"
 import { ingestLogs, ingestMessage } from "./messages"
 
 const JD_AES_CCM_TAG_BYTES = 4
@@ -107,6 +113,8 @@ export class ConnectedDevice {
     private deployPtr = 0
     private deployCmd: WsskCmd = 0
     streamingMask = WsskStreamingType.DefaultMask
+
+    private lastDbgInfo: DebugInfo
 
     private lastExnBuffer: Buffer
     private exnBuffer: Buffer
@@ -509,6 +517,63 @@ export class ConnectedDevice {
         }
     }
 
+    private async parseException(logs: string[]) {
+        let sha = ""
+        let startIdx = 0
+        let exnName = ""
+        let idx = 0
+        for (const l of logs) {
+            let m = /DevS-SHA256:\s+([a-f0-9]{64})/.exec(l)
+            if (m) sha = m[1].toLowerCase()
+            m = /^\* Exception:\s*(\S+)/.exec(l)
+            if (m) {
+                startIdx = idx
+                exnName = m[1]
+            }
+            idx++
+        }
+
+        if (sha) {
+            if (this.lastDbgInfo?.binarySHA256 !== sha) {
+                this.lastDbgInfo = null
+                try {
+                    const body = await storage.resolveScriptBodyFromSha(
+                        this.dev.partitionKey,
+                        sha
+                    )
+                    this.lastDbgInfo = body?.program
+                } catch {}
+            }
+        }
+
+        if (this.lastDbgInfo) {
+            logs = logs.map(l =>
+                parseStackFrame(this.lastDbgInfo, l).markedLine.replace(
+                    /\u001b\[[\d;]+m/g,
+                    ""
+                )
+            )
+        }
+
+        const stack = logs.slice(startIdx).filter(l => l.startsWith("*"))
+        let message = ""
+        for (const l of stack) {
+            const m = /^\*\s+message: (.*)/.exec(l)
+            if (m) message = m[1]
+        }
+
+        const exn: Error = {
+            name: exnName,
+            message,
+            stack: stack.join("\n"),
+        }
+
+        return {
+            exn,
+            logs,
+        }
+    }
+
     private async fastTick() {
         if (this.exnBuffer && this.lastExnBuffer === this.exnBuffer) {
             if (this.exnBuffer.length) {
@@ -517,11 +582,14 @@ export class ConnectedDevice {
             }
             this.exnBuffer = null
             if (this.exnLines?.length) {
-                this.log.info(`exception: ${this.exnLines.join("\n")}`)
-                this.traceException(this.exnLines, {})
+                const { exn, logs } = await this.parseException(this.exnLines)
+                this.log.info(`exception: ${exn.stack}`)
+                // TODO send logs somehow
+                this.traceException(exn, {})
                 await this.notify({
                     type: "exn",
-                    logs: this.exnLines,
+                    exn,
+                    logs,
                 })
                 this.exnLines = null
             }
@@ -604,23 +672,16 @@ export class ConnectedDevice {
             })
     }
 
-    public traceException(exn: string[], options: Partial<ExceptionTelemetry>) {
-        console.log(`trace exception`)
-        console.log(exn)
+    public traceException(
+        exception: Error,
+        options: Partial<ExceptionTelemetry>
+    ) {
+        console.log(`trace exception ${exception.name}(${exception.message})`)
         const { measurements = {}, ...rest } = options
         const deviceMeasurements: any = {}
         if (this.deployNumFail)
             deviceMeasurements.deployNumFail = this.deployNumFail
 
-        const name = "Error"
-        const message = exn[0]
-        const stack = exn.slice(1).join("\n")
-        const exception: Error = {
-            name,
-            message,
-            stack,
-        }
-        console.log(exception)
         this.track(
             {
                 ...rest,
