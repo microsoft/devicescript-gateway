@@ -525,7 +525,7 @@ export class ConnectedDevice {
         for (const l of logs) {
             let m = /DevS-SHA256:\s+([a-f0-9]{64})/.exec(l)
             if (m) sha = m[1].toLowerCase()
-            m = /^\* Exception:\s*(\S+)/.exec(l)
+            m = /^[\*!] Exception:\s*(\S+)/.exec(l)
             if (m) {
                 startIdx = idx
                 exnName = m[1]
@@ -546,26 +546,29 @@ export class ConnectedDevice {
             }
         }
 
-        if (this.lastDbgInfo) {
-            logs = logs.map(l =>
-                parseStackFrame(this.lastDbgInfo, l).markedLine.replace(
-                    /\u001b\[[\d;]+m/g,
-                    ""
-                )
+        logs = logs.map(l =>
+            parseStackFrame(this.lastDbgInfo, l).markedLine.replace(
+                /\u001b\[[\d;]+m/g,
+                ""
             )
-        }
+        )
 
-        const stack = logs.slice(startIdx).filter(l => l.startsWith("*"))
+        const stack = logs
+            .slice(startIdx)
+            .filter(l => l.startsWith("*") || l.startsWith("!"))
+            .map(l => l.slice(1))
         let message = ""
         for (const l of stack) {
-            const m = /^\*\s+message: (.*)/.exec(l)
+            const m = /^\s+message: (.*)/.exec(l)
             if (m) message = m[1]
         }
 
         const exn: Error = {
             name: exnName,
             message,
-            stack: stack.join("\n"),
+            stack:
+                `${exnName}: ${message}\n` +
+                stack.filter(l => /^\s*at /.test(l)).join("\n"),
         }
 
         return {
