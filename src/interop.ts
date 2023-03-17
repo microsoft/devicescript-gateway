@@ -13,3 +13,5 @@ export {
     SideUploadJsonFromDevice,
     SideExceptionFromDevice,
 } from "../devicescript/interop/src/interop"
+
+export { parseStackFrame } from "../devicescript/interop/src/debug"

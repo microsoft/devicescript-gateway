@@ -84,6 +84,7 @@ export interface FrameFromDevice extends DeviceMessage {
 
 export interface ExnFromDevice extends DeviceMessage {
     type: "exn"
+    exn: Error
     logs: string[]
 }
 

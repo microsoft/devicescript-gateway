@@ -339,8 +339,8 @@ export async function getScript(
     )
 }
 
-const SHA_PART = "sha"
 function binarySha(hex: string) {
+    if (!hex) return undefined
     const s = createHash("sha256")
     s.update(Buffer.from(hex, "hex"))
     const sha = s.digest("hex")
@@ -348,6 +348,7 @@ function binarySha(hex: string) {
 }
 
 export async function resolveScriptBodyFromSha(
+    partId: string,
     sha: string
 ): Promise<ScriptBody> {
     if (!sha) return undefined
@@ -355,15 +356,18 @@ export async function resolveScriptBodyFromSha(
     // check sha format, roundtrip throug buffer parser
     sha = Buffer.from(sha, "hex").toString("hex")
 
-    const res = await scriptVersionShaTable.getEntity(SHA_PART, sha)
+    const res = await scriptVersionShaTable.getEntity(partId, sha)
     if (!res) return undefined
 
     const scriptId = res.scriptId as string
     const scriptVersion = res.scriptVersion as number
-    return await getScriptBody(scriptId, scriptVersion)
+    const body = await getScriptBody(scriptId, scriptVersion)
+    body.program.binarySHA256 = sha
+    return body
 }
 
 async function upsertScriptVersionShaSnapshot(
+    partitionKey: string,
     scriptId: string,
     scriptVersion: number,
     sha: string
@@ -373,7 +377,7 @@ async function upsertScriptVersionShaSnapshot(
     // TODO: avoid sha collisions
     await scriptVersionShaTable.upsertEntity(
         {
-            partitionKey: SHA_PART,
+            partitionKey,
             rowKey: sha,
             scriptId,
             scriptVersion,
@@ -483,12 +487,17 @@ export async function updateScript(
     }
 
     const body = updates.body || (await getScriptBody(scr.id, scr.version))
-    const sha = binarySha(body?.program?.binary?.hex)
-    if (sha) {
-        await upsertScriptVersionShaSnapshot(scr.id, newVersion, sha)
-        info.sha = sha
-    }
+    info.sha = binarySha(body?.program?.binary?.hex)
     await createScriptSnapshot(scr.id, newVersion, body)
+    if (info.sha) {
+        // only create index entry after creating blob
+        await upsertScriptVersionShaSnapshot(
+            scr.partition,
+            scr.id,
+            newVersion,
+            info.sha
+        )
+    }
 
     if (newVersion == 1) await scriptsTable.createEntity(info)
     else await scriptsTable.updateEntity(info, "Merge")
