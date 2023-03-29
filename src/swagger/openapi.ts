@@ -335,17 +335,6 @@ export function generateOpenApiSpec() {
         )
     )
 
-    function queryParams() {
-        return [
-            pQuery("start", msTime("Start Time")),
-            pQuery("stop", msTime("Stop Time")),
-            pQuery(
-                "first",
-                sNumber("Return First", "Max. number of elements to return")
-            ),
-        ]
-    }
-
     const scriptProps = {
         name: example(sString("package/path"), "my-device/main"),
         meta: sObj({}),
