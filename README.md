@@ -3,6 +3,8 @@
 This project contains a prototype development gateway implementation
 for the built-in DeviceScript cloud integration.
 
+The gateway can be run locally (no cloud dependencies) or deployed to Azure.
+
 -   [Read the documentation](https://microsoft.github.io/devicescript/developer/gateway)
 
 | :exclamation: This implementation is for prototyping only and not meant for production. |
