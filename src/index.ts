@@ -4,7 +4,7 @@ import fastify, { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
 import fastifyBasicAuth from "@fastify/basic-auth"
 import fastifyCors from "@fastify/cors"
 import websocketPlugin from "@fastify/websocket"
-import { throwStatus } from "./util"
+import { selfHost, selfUrl, throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
 
 import * as storage from "./storage"
@@ -95,8 +95,8 @@ async function main() {
     })
     server.get("/swagger/api.json", async (req, resp) => {
         const spec = generateOpenApiSpec()
-        spec.schemes = [storage.selfUrl().replace(/:.*/, "")]
-        spec.host = storage.selfHost()
+        spec.schemes = [selfUrl().replace(/:.*/, "")]
+        spec.host = selfHost()
         return spec
     })
     server.register(fastifyStatic, {

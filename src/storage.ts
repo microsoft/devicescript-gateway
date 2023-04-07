@@ -31,28 +31,6 @@ export interface ScriptBody {
     program: DebugInfo
 }
 
-export function webSiteName() {
-    const siteName = process.env["WEBSITE_SITE_NAME"]
-    return siteName || "localhost"
-}
-
-/**
- * Something like https://foobar.azurewebsites.net or http://localhost:1234
- */
-export function selfUrl() {
-    // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
-    const hostname = process.env["WEBSITE_HOSTNAME"]
-    if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
-    const protocol = /^(127\.|0\.|localhost)/i.test(hostname) ? "http" : "https"
-    return `${protocol}://${hostname}`
-}
-
-export function selfHost() {
-    return selfUrl()
-        .replace(/^\w+:\/\//, "")
-        .replace(/\/.*/, "")
-}
-
 export async function setup() {
     const secrets = createSecretClient()
     const connectionStringSecretName =

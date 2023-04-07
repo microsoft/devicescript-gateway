@@ -4,6 +4,7 @@ import {
     checkString,
     displayName,
     sanitizeDeviceId,
+    selfUrl,
     throwStatus,
     tryParseJSON,
 } from "./util"
@@ -21,7 +22,6 @@ import {
     getDeviceList,
     getScript,
     listMessageHooks,
-    selfUrl,
     stringifyMeta,
     updateDevice,
 } from "./storage"

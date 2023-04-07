@@ -1,6 +1,28 @@
 import { FastifyBaseLogger } from "fastify"
 import { DeviceInfo } from "./schema"
 
+/**
+ * Something like https://foobar.azurewebsites.net or http://localhost:1234
+ */
+export function selfUrl() {
+    // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
+    const hostname = process.env["WEBSITE_HOSTNAME"]
+    if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
+    const protocol = /^(127\.|0\.|localhost)/i.test(hostname) ? "http" : "https"
+    return `${protocol}://${hostname}`
+}
+
+export function selfHost() {
+    return selfUrl()
+        .replace(/^\w+:\/\//, "")
+        .replace(/\/.*/, "")
+}
+
+export function webSiteName() {
+    const siteName = process.env["WEBSITE_SITE_NAME"]
+    return siteName || "localhost"
+}
+
 export function idiv(a: number, b: number) {
     return ((a | 0) / (b | 0)) | 0
 }
