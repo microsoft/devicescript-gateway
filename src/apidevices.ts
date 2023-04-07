@@ -1,6 +1,5 @@
 import { randomBytes } from "crypto"
 import { FastifyInstance, FastifyRequest } from "fastify"
-import * as storage from "./storage"
 import {
     checkString,
     displayName,
@@ -12,6 +11,20 @@ import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
 import { wsskConnString } from "./wssk"
 import { fullDeviceId, pingDevice, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
+import {
+    addMessageHook,
+    createDevice,
+    deleteDevice,
+    deleteMessageHook,
+    deviceStats,
+    getDevice,
+    getDeviceList,
+    getScript,
+    listMessageHooks,
+    selfUrl,
+    stringifyMeta,
+    updateDevice,
+} from "./storage"
 
 const CONNECTED_TIMEOUT = 2 * 60 * 1000
 export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
@@ -29,12 +42,12 @@ function externalDevice(info: DeviceInfo) {
         deployedHash: info.deployedHash,
         lastAct: info.lastAct ? new Date(info.lastAct).toISOString() : "",
         meta: tryParseJSON(info.metaJSON),
-        stats: storage.deviceStats(info),
+        stats: deviceStats(info),
     }
 }
 
 async function singleDevice(id: DeviceId) {
-    const dev = await storage.getDevice(id)
+    const dev = await getDevice(id)
     if (!dev) throwStatus(404, "no such device")
     return externalDevice(dev)
 }
@@ -53,7 +66,7 @@ export async function getDeviceFromFullPath(req: FastifyRequest) {
     if (!(typeof part == "string" && /^\w{2,32}$/.test(part)))
         throwStatus(400, "invalid partitionId: " + part)
     const devid = getDeviceIdFromParams(req, part)
-    const dev = await storage.getDevice(devid)
+    const dev = await getDevice(devid)
     if (dev == null) throwStatus(404, "no such device: " + devid.rowKey)
     return dev
 }
@@ -69,10 +82,10 @@ function sanitizeDeviceIdOrThrow(
 }
 
 async function addDevice(id: DeviceId) {
-    let dev = await storage.getDevice(id)
+    let dev = await getDevice(id)
     if (!dev) {
         console.log(`creating device ${fullDeviceId(id)}`)
-        dev = await storage.createDevice(id, {
+        dev = await createDevice(id, {
             key: randomBytes(32).toString("base64"),
         })
     }
@@ -126,11 +139,7 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
     if (scriptId != undefined && scriptId != "") {
         checkString(scriptId)
         try {
-            const scr = await storage.getScript(
-                req.partition,
-                scriptId,
-                scriptVersion
-            )
+            const scr = await getScript(req.partition, scriptId, scriptVersion)
             // default to latest version
             if (!scriptVersion) scriptVersion = scr.version
         } catch (e: any) {
@@ -145,9 +154,9 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
         }
     }
 
-    await storage.updateDevice(id, d => {
+    await updateDevice(id, d => {
         if (name != undefined) d.name = name
-        if (meta != undefined) d.metaJSON = storage.stringifyMeta(meta)
+        if (meta != undefined) d.metaJSON = stringifyMeta(meta)
         if (scriptId != undefined) {
             d.scriptId = scriptId
             d.scriptVersion = scriptVersion
@@ -204,31 +213,31 @@ export async function initHubRoutes(server: FastifyInstance) {
         if (method) validateMethod(method)
         if (typeof url != "string" || !/^https:\/\//.test(url))
             throwStatus(418, "invalid URL")
-        const key = await storage.addMessageHook(req.partition, {
+        const key = await addMessageHook(req.partition, {
             deviceId,
             method,
             url,
         })
         return reply
             .status(201)
-            .headers({ location: storage.selfUrl() + "/hooks/" + key })
+            .headers({ location: selfUrl() + "/hooks/" + key })
             .send({ id: key })
     })
 
     server.get("/hooks", async req => {
-        return await storage.listMessageHooks(req.partition)
+        return await listMessageHooks(req.partition)
     })
 
     server.delete<{ Params: { hookId: string } }>(
         "/hooks/:hookId",
         async req => {
-            await storage.deleteMessageHook(req.partition, req.params.hookId)
+            await deleteMessageHook(req.partition, req.params.hookId)
             return {}
         }
     )
 
     server.get("/devices", async req => {
-        const infos = await storage.getDeviceList(req.partition)
+        const infos = await getDeviceList(req.partition)
         return infos.map(externalDevice)
     })
 
@@ -239,13 +248,13 @@ export async function initHubRoutes(server: FastifyInstance) {
 
     server.get("/devices/:deviceId/fwd", async req => {
         const devid = getDeviceIdFromParams(req)
-        const dev = await storage.getDevice(devid)
+        const dev = await getDevice(devid)
         return fwdSockConnSettings(dev, "devfwd")
     })
 
     server.get("/devices/:deviceId/logs", async req => {
         const devid = getDeviceIdFromParams(req)
-        const dev = await storage.getDevice(devid)
+        const dev = await getDevice(devid)
         return fwdSockConnSettings(dev, "devlogs")
     })
 
@@ -256,7 +265,7 @@ export async function initHubRoutes(server: FastifyInstance) {
 
     server.delete("/devices/:deviceId", async req => {
         const devid = getDeviceIdFromParams(req)
-        await storage.deleteDevice(devid)
+        await deleteDevice(devid)
         return {}
     })
 }

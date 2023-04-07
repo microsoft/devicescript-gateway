@@ -12,7 +12,7 @@ import { gunzip, gzip } from "zlib"
 import { pubToDevice } from "./devutil"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
-import { createSecretClient } from "./vault"
+import { createSecretClient } from "./secrets"
 import { DebugInfo } from "./interop"
 import { createHash } from "crypto"
 

@@ -8,13 +8,13 @@ import { throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
 
 import * as storage from "./storage"
-import * as eventhub from "./eventhub"
-import * as appinsights from "./appinsights"
+import * as eventhub from "./azure/eventhub"
+import * as appinsights from "./azure/appinsights"
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
-import { createSecretClient } from "./vault"
+import { createSecretClient } from "./secrets"
 import { generateOpenApiSpec } from "./swagger/openapi"
 
 async function initAuth(server: FastifyInstance) {

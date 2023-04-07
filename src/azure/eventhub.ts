@@ -1,7 +1,7 @@
 import { EventHubProducerClient } from "@azure/event-hubs"
 import { serverTelemetry } from "./appinsights"
-import { registerMessageSink } from "./messages"
-import { createSecretClient } from "./vault"
+import { registerMessageSink } from "../messages"
+import { createSecretClient } from "../secrets"
 
 export async function setup() {
     const secrets = createSecretClient()

@@ -16,7 +16,7 @@ import {
     devsTelemetry,
     logLineToTraceTelemetry,
     serverTelemetry,
-} from "./appinsights"
+} from "./azure/appinsights"
 import {
     EventTelemetry,
     ExceptionTelemetry,

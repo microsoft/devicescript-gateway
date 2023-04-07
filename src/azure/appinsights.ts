@@ -1,10 +1,10 @@
-import * as mq from "./mq"
+import * as mq from "../mq"
 import * as appInsights from "applicationinsights"
 import {
     ContextTagKeys,
     TraceTelemetry,
 } from "applicationinsights/out/Declarations/Contracts"
-import { registerLogSink, registerMessageSink } from "./messages"
+import { registerLogSink, registerMessageSink } from "../messages"
 import { Contracts } from "applicationinsights"
 
 // telemetry from devices
