@@ -7,15 +7,15 @@ import websocketPlugin from "@fastify/websocket"
 import { selfHost, selfUrl, throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
 
-import * as storage from "./storage"
-import * as eventhub from "./azure/eventhub"
-import * as appinsights from "./azure/appinsights"
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
 import { createSecretClient } from "./secrets"
 import { generateOpenApiSpec } from "./swagger/openapi"
+import { setup as appInsightsSetup, serverTelemetry } from "./azure/appinsights"
+import { setup as eventHubSetup } from "./azure/eventhub"
+import { setup as storageSetup, defaultPartition } from "./storage"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
@@ -40,7 +40,7 @@ async function initAuth(server: FastifyInstance) {
             if (passwords.indexOf(username + ":" + password) < 0)
                 return new Error("invalid user/pass")
             else {
-                req.partition = storage.defaultPartition
+                req.partition = defaultPartition
                 return undefined
             }
         },
@@ -63,7 +63,7 @@ window.onload = function () {
 `
 
 async function main() {
-    await appinsights.setup()
+    await appInsightsSetup()
 
     const server = fastify({
         disableRequestLogging: true,
@@ -122,8 +122,8 @@ async function main() {
         done()
     })
 
-    await storage.setup()
-    await eventhub.setup()
+    await storageSetup()
+    await eventHubSetup()
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)
@@ -152,7 +152,7 @@ async function main() {
     const host = "0.0.0.0"
     server.listen({ port, host }, err => {
         if (err) {
-            appinsights.serverTelemetry()?.trackException({ exception: err })
+            serverTelemetry()?.trackException({ exception: err })
             console.error(err)
             process.exit(1)
         }
