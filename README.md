@@ -32,7 +32,7 @@ yarn dev
 
 Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
--   start a local instance using azurite
+-   start a local instance using Azure services
 
 ```
 yarn dev:azure
