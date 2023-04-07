@@ -1,6 +1,16 @@
 import { FastifyInstance, FastifyRequest } from "fastify"
 import { checkString, throwStatus } from "./util"
-import { ScriptBody, ScriptProperties, createScript, deleteScript, getScript, getScriptBody, getScriptVersions, listScripts, updateScript } from "./storage"
+import {
+    ScriptBody,
+    ScriptProperties,
+    createScript,
+    deleteScript,
+    getScript,
+    getScriptBody,
+    getScriptVersions,
+    listScripts,
+    updateScript,
+} from "./storage"
 
 function checkScriptId(id: string) {
     if (typeof id != "string" || !/^\d{10}[a-zA-Z]{12}$/.test(id))

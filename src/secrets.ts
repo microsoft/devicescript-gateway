@@ -6,9 +6,11 @@ export interface Secrets {
 }
 
 export function createSecretClient(): Secrets {
+    // try azure key vault
     const keyvault = createKeyVaultClient()
     if (keyvault) return keyvault
 
+    // default to process.env
     dotenv.config()
     return {
         async getSecret(name) {

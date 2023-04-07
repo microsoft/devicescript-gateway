@@ -1,4 +1,3 @@
-import * as mq from "../mq"
 import * as appInsights from "applicationinsights"
 import {
     ContextTagKeys,

@@ -3,7 +3,6 @@ import {
     TableClient,
     TableEntity,
     TableEntityResult,
-    TransactionAction,
 } from "@azure/data-tables"
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob"
 import { randomBytes } from "crypto"
