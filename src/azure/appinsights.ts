@@ -11,7 +11,7 @@ let _devsTelemetry: appInsights.TelemetryClient
 export async function setup() {
     const connString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
     if (!connString) {
-        console.log(`no application insights connection string, skipping`)
+        console.log(`no env APPLICATIONINSIGHTS_CONNECTION_STRING, skipping`)
         return
     }
 
