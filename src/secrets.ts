@@ -1,4 +1,3 @@
-import dotenv from "dotenv"
 import { createKeyVaultClient } from "./azure/keyvault"
 
 export interface Secrets {
@@ -11,7 +10,6 @@ export function createSecretClient(): Secrets {
     if (keyvault) return keyvault
 
     // default to process.env
-    dotenv.config()
     return {
         async getSecret(name) {
             const value = process.env[name]

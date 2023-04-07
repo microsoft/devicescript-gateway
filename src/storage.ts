@@ -37,7 +37,7 @@ export async function setup() {
         process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
         "storageAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value
+    const connStr = connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
     if (!connStr) throw new Error("storage connection string is empty")
 
     devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff)
