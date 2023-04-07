@@ -1,6 +1,5 @@
 import { FastifyBaseLogger, FastifyInstance } from "fastify"
 import * as crypto from "crypto"
-import * as storage from "./storage"
 import { getDeviceFromFullPath, MAX_WSSK_SIZE } from "./apidevices"
 import {
     DeviceId,
@@ -9,14 +8,14 @@ import {
     ToDeviceMessage,
     zeroDeviceStats,
 } from "./schema"
-import { displayName, runInBg, tryParseJSON } from "./util"
+import { displayName, runInBg, selfHost, tryParseJSON } from "./util"
 import { fullDeviceId, pubFromDevice, subToDevice } from "./devutil"
 import {
     contextTagKeys,
     devsTelemetry,
     logLineToTraceTelemetry,
     serverTelemetry,
-} from "./appinsights"
+} from "./azure/appinsights"
 import {
     EventTelemetry,
     ExceptionTelemetry,
@@ -33,6 +32,13 @@ import {
     parseStackFrame,
 } from "./interop"
 import { ingestLogs, ingestMessage } from "./messages"
+import {
+    deviceStats,
+    getDevice,
+    getScriptBody,
+    resolveScriptBodyFromSha,
+    updateDevice,
+} from "./storage"
 
 const JD_AES_CCM_TAG_BYTES = 4
 const JD_AES_CCM_LENGTH_BYTES = 2
@@ -372,10 +378,7 @@ export class ConnectedDevice {
             this.deployBuffer = null
             this.deployHash = null
             try {
-                const body = await storage.getScriptBody(
-                    d.scriptId,
-                    d.scriptVersion
-                )
+                const body = await getScriptBody(d.scriptId, d.scriptVersion)
                 const tmp = Buffer.from(body.program.binary.hex, "hex")
                 if (tmp.length < 128) this.warn(`compiled program too short`)
                 else {
@@ -403,7 +406,7 @@ export class ConnectedDevice {
             runInBg(this.log, "tick", this.fastTick())
         }, 272)
         await this.setStreaming(this.streamingMask)
-        await this.syncScript(await storage.getDevice(this.id))
+        await this.syncScript(await getDevice(this.id))
     }
 
     async fromDevice(msg: Buffer) {
@@ -537,7 +540,7 @@ export class ConnectedDevice {
             if (this.lastDbgInfo?.binarySHA256 !== sha) {
                 this.lastDbgInfo = null
                 try {
-                    const body = await storage.resolveScriptBodyFromSha(
+                    const body = await resolveScriptBodyFromSha(
                         this.dev.partitionKey,
                         sha
                     )
@@ -608,9 +611,9 @@ export class ConnectedDevice {
 
             this.lastMsg = 0
             this.stats = zeroDeviceStats()
-            await storage.updateDevice(this.id, d => {
+            await updateDevice(this.id, d => {
                 if (lastMsg) d.lastAct = lastMsg
-                const stats = storage.deviceStats(d)
+                const stats = deviceStats(d)
                 for (const k of Object.keys(statsUpdate)) {
                     stats[k] += statsUpdate[k]
                 }
@@ -806,7 +809,7 @@ function aesCcmDecrypt(key: Buffer, nonce: Buffer, msg: Buffer) {
 
 export function wsskConnString(dev: DeviceInfo) {
     const key = Buffer.from(dev.key, "base64").toString("hex")
-    const host = storage.selfHost()
+    const host = selfHost()
     const devpath = fullDeviceId(dev)
     return `ws://wssk:${key}@${host}/wssk/${devpath}`
 }

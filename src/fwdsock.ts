@@ -1,6 +1,5 @@
 import { FastifyInstance } from "fastify"
 import * as crypto from "crypto"
-import * as storage from "./storage"
 import { getDeviceFromFullPath } from "./apidevices"
 import {
     DeviceInfo,
@@ -11,7 +10,7 @@ import {
     UploadJsonFromDevice,
 } from "./schema"
 import { websockDataToBuffer } from "./wssk"
-import { runInBg } from "./util"
+import { runInBg, selfUrl } from "./util"
 import { pubToDevice, subFromDevice, pingDevice, fullDeviceId } from "./devutil"
 import type {
     SideUploadBinFromDevice,
@@ -45,7 +44,7 @@ export function fwdSockConnSettings(
     const n = nowSeconds()
     const protocol = "mgmt-" + n + "-" + tokenSig(dev, n)
     const url =
-        storage.selfUrl().replace("http", "ws") +
+        selfUrl().replace("http", "ws") +
         "/" +
         route +
         "/" +

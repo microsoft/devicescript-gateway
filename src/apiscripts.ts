@@ -1,6 +1,16 @@
 import { FastifyInstance, FastifyRequest } from "fastify"
-import * as storage from "./storage"
 import { checkString, throwStatus } from "./util"
+import {
+    ScriptBody,
+    ScriptProperties,
+    createScript,
+    deleteScript,
+    getScript,
+    getScriptBody,
+    getScriptVersions,
+    listScripts,
+    updateScript,
+} from "./storage"
 
 function checkScriptId(id: string) {
     if (typeof id != "string" || !/^\d{10}[a-zA-Z]{12}$/.test(id))
@@ -9,15 +19,15 @@ function checkScriptId(id: string) {
 
 export async function initScriptRoutes(server: FastifyInstance) {
     server.get("/scripts", async req => {
-        return await storage.listScripts(req.partition)
+        return await listScripts(req.partition)
     })
 
-    async function getScript(req: FastifyRequest) {
+    async function fetchScript(req: FastifyRequest) {
         const scriptId = (req.params as any).scriptId
         checkScriptId(scriptId)
         const verId = parseInt((req.params as any).version) || undefined
         try {
-            return await storage.getScript(req.partition, scriptId, verId)
+            return await getScript(req.partition, scriptId, verId)
         } catch (e: any) {
             if (e.statusCode == 404)
                 throwStatus(
@@ -28,36 +38,36 @@ export async function initScriptRoutes(server: FastifyInstance) {
         }
     }
 
-    server.get("/scripts/:scriptId", getScript)
+    server.get("/scripts/:scriptId", fetchScript)
     server.get("/scripts/:scriptId/body", async req => {
-        const scr = await getScript(req)
-        return await storage.getScriptBody(scr.id, scr.version)
+        const scr = await fetchScript(req)
+        return await getScriptBody(scr.id, scr.version)
     })
 
     server.put("/scripts/:scriptId/body", async req => {
-        const scr = await getScript(req)
+        const scr = await fetchScript(req)
         const body = verifyBody(req.body)
-        return await storage.updateScript(scr, { body })
+        return await updateScript(scr, { body })
     })
 
     server.get("/scripts/:scriptId/versions", async req => {
-        const scr = await getScript(req)
-        const headers = await storage.getScriptVersions(scr)
+        const scr = await fetchScript(req)
+        const headers = await getScriptVersions(scr)
         return { headers }
     })
 
-    server.get("/scripts/:scriptId/versions/:version", getScript)
+    server.get("/scripts/:scriptId/versions/:version", fetchScript)
     server.get("/scripts/:scriptId/versions/:version/body", async req => {
-        const scr = await getScript(req)
-        return await storage.getScriptBody(scr.id, scr.version)
+        const scr = await fetchScript(req)
+        return await getScriptBody(scr.id, scr.version)
     })
 
-    function verifyBody(body: any): storage.ScriptBody {
+    function verifyBody(body: any): ScriptBody {
         if (typeof body != "object" || Array.isArray(body))
             throwStatus(412, "invalid body type")
         if (JSON.stringify(body).length > 5 * 1024 * 1024)
             throwStatus(413, "body too large")
-        const b = body as storage.ScriptBody
+        const b = body as ScriptBody
         if (!b.program || typeof b.program?.binary?.hex != "string")
             throwStatus(418, "invalid body format")
         return body
@@ -65,7 +75,7 @@ export async function initScriptRoutes(server: FastifyInstance) {
 
     function getScriptData(req: FastifyRequest) {
         const reqbody: any = req.body
-        const props: storage.ScriptProperties = {
+        const props: ScriptProperties = {
             name: reqbody.name,
             meta: reqbody.meta,
             body: reqbody.body,
@@ -82,19 +92,19 @@ export async function initScriptRoutes(server: FastifyInstance) {
     }
 
     server.patch("/scripts/:scriptId", async req => {
-        const scr = await getScript(req)
+        const scr = await fetchScript(req)
         const updates = getScriptData(req)
-        return await storage.updateScript(scr, updates)
+        return await updateScript(scr, updates)
     })
 
     server.delete("/scripts/:scriptId", async req => {
-        const scr = await getScript(req)
-        return await storage.deleteScript(req.partition, scr.id)
+        const scr = await fetchScript(req)
+        return await deleteScript(req.partition, scr.id)
     })
 
     server.post("/scripts", async req => {
         const props = getScriptData(req)
         if (!props.body) throwStatus(400, "no body")
-        return await storage.createScript(req.partition, props)
+        return await createScript(req.partition, props)
     })
 }

@@ -1,10 +1,9 @@
-import * as mq from "./mq"
 import * as appInsights from "applicationinsights"
 import {
     ContextTagKeys,
     TraceTelemetry,
 } from "applicationinsights/out/Declarations/Contracts"
-import { registerLogSink, registerMessageSink } from "./messages"
+import { registerLogSink, registerMessageSink } from "../messages"
 import { Contracts } from "applicationinsights"
 
 // telemetry from devices
@@ -12,7 +11,7 @@ let _devsTelemetry: appInsights.TelemetryClient
 export async function setup() {
     const connString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
     if (!connString) {
-        console.log(`no application insights connection string, skipping`)
+        console.log(`no env APPLICATIONINSIGHTS_CONNECTION_STRING, skipping`)
         return
     }
 

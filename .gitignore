@@ -15,3 +15,4 @@ tmp
 *.parameters.json
 debug.mjs
 pkgtmp
+.azurite

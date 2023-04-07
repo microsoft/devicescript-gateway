@@ -1,4 +1,4 @@
-import { selfUrl, webSiteName } from "../storage"
+import { selfUrl, webSiteName } from "../util"
 import {
     init,
     basicAuth,

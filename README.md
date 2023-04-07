@@ -3,6 +3,8 @@
 This project contains a prototype development gateway implementation
 for the built-in DeviceScript cloud integration.
 
+The gateway can be run locally (no cloud dependencies) or deployed to Azure.
+
 -   [Read the documentation](https://microsoft.github.io/devicescript/developer/gateway)
 
 | :exclamation: This implementation is for prototyping only and not meant for production. |
@@ -12,10 +14,30 @@ for the built-in DeviceScript cloud integration.
 
 Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
--   start a local instance using
+-   start azurite in a terminal
+
+```bash
+yarn azurite
+```
+
+-   start a local instance using azurite
+
+```bash
+yarn dev
+```
+
+-   after running head to http://127.0.0.1:7071/swagger/ or otherwise the live site
+-   Click Authorize
+-   Use user/password `devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==`
+
+## Azure services
+
+Make sure to follow the provisioning steps in the documentation before trying to run locally.
+
+-   start a local instance using Azure services
 
 ```
-yarn dev
+yarn dev:azure
 ```
 
 -   after running head to http://127.0.0.1:7071/swagger/ or otherwise the live site

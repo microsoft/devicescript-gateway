@@ -1,5 +1,5 @@
 import dotenv from "dotenv"
-const out = dotenv.config()
-if (out.error)
-    throw out.error
+const azure = process.argv.includes("--azure")
+const out = dotenv.config({ path: azure ? "./.env" : "./local.env" })
+if (out.error) throw out.error
 import("./dist/src/index.js")

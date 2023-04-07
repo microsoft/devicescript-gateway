@@ -3,16 +3,16 @@ import {
     TableClient,
     TableEntity,
     TableEntityResult,
-    TransactionAction,
+    TableServiceClientOptions,
 } from "@azure/data-tables"
-import { BlobServiceClient, ContainerClient } from "@azure/storage-blob"
+import { BlobServiceClient, ContainerClient, StoragePipelineOptions } from "@azure/storage-blob"
 import { randomBytes } from "crypto"
 import { promisify } from "util"
 import { gunzip, gzip } from "zlib"
 import { pubToDevice } from "./devutil"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
-import { createSecretClient } from "./vault"
+import { createSecretClient } from "./secrets"
 import { DebugInfo } from "./interop"
 import { createHash } from "crypto"
 
@@ -32,53 +32,33 @@ export interface ScriptBody {
     program: DebugInfo
 }
 
-export function webSiteName() {
-    const siteName = process.env["WEBSITE_SITE_NAME"]
-    return siteName || "localhost"
-}
-
-/**
- * Something like https://foobar.azurewebsites.net or http://localhost:1234
- */
-export function selfUrl() {
-    // use https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
-    const hostname = process.env["WEBSITE_HOSTNAME"]
-    if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
-    const protocol = /^(127\.|0\.|localhost)/i.test(hostname) ? "http" : "https"
-    return `${protocol}://${hostname}`
-}
-
-export function selfHost() {
-    return selfUrl()
-        .replace(/^\w+:\/\//, "")
-        .replace(/\/.*/, "")
-}
-
 export async function setup() {
     const secrets = createSecretClient()
     const connectionStringSecretName =
         process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
         "storageAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value
+    const connStr = connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
     if (!connStr) throw new Error("storage connection string is empty")
 
-    devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff)
+    const tableOptions: TableServiceClientOptions = { allowInsecureConnection: process.env.DEVS_LOCALHOST === "1" }
+    const blobOptions: StoragePipelineOptions = { }
+    devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff, tableOptions)
     messageHooksTable = TableClient.fromConnectionString(
         connStr,
-        "messagehooks" + suff
+        "messagehooks" + suff, tableOptions
     )
-    scriptsTable = TableClient.fromConnectionString(connStr, "scripts" + suff)
+    scriptsTable = TableClient.fromConnectionString(connStr, "scripts" + suff, tableOptions)
     scriptVersionsTable = TableClient.fromConnectionString(
         connStr,
-        "scrver" + suff
+        "scrver" + suff, tableOptions
     )
     scriptVersionShaTable = TableClient.fromConnectionString(
         connStr,
-        "scrversha" + suff
+        "scrversha" + suff, tableOptions
     )
 
-    blobClient = BlobServiceClient.fromConnectionString(connStr)
+    blobClient = BlobServiceClient.fromConnectionString(connStr, blobOptions)
     scriptsBlobs = blobClient.getContainerClient("scripts" + suff)
 
     await devicesTable.createTable()

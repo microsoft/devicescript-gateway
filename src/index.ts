@@ -4,18 +4,18 @@ import fastify, { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
 import fastifyBasicAuth from "@fastify/basic-auth"
 import fastifyCors from "@fastify/cors"
 import websocketPlugin from "@fastify/websocket"
-import { throwStatus } from "./util"
+import { selfHost, selfUrl, throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
 
-import * as storage from "./storage"
-import * as eventhub from "./eventhub"
-import * as appinsights from "./appinsights"
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
-import { createSecretClient } from "./vault"
+import { createSecretClient } from "./secrets"
 import { generateOpenApiSpec } from "./swagger/openapi"
+import { setup as appInsightsSetup, serverTelemetry } from "./azure/appinsights"
+import { setup as eventHubSetup } from "./azure/eventhub"
+import { setup as storageSetup, defaultPartition } from "./storage"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
@@ -40,7 +40,7 @@ async function initAuth(server: FastifyInstance) {
             if (passwords.indexOf(username + ":" + password) < 0)
                 return new Error("invalid user/pass")
             else {
-                req.partition = storage.defaultPartition
+                req.partition = defaultPartition
                 return undefined
             }
         },
@@ -63,7 +63,7 @@ window.onload = function () {
 `
 
 async function main() {
-    await appinsights.setup()
+    await appInsightsSetup()
 
     const server = fastify({
         disableRequestLogging: true,
@@ -95,8 +95,8 @@ async function main() {
     })
     server.get("/swagger/api.json", async (req, resp) => {
         const spec = generateOpenApiSpec()
-        spec.schemes = [storage.selfUrl().replace(/:.*/, "")]
-        spec.host = storage.selfHost()
+        spec.schemes = [selfUrl().replace(/:.*/, "")]
+        spec.host = selfHost()
         return spec
     })
     server.register(fastifyStatic, {
@@ -122,8 +122,8 @@ async function main() {
         done()
     })
 
-    await storage.setup()
-    await eventhub.setup()
+    await storageSetup()
+    await eventHubSetup()
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)
@@ -152,7 +152,7 @@ async function main() {
     const host = "0.0.0.0"
     server.listen({ port, host }, err => {
         if (err) {
-            appinsights.serverTelemetry()?.trackException({ exception: err })
+            serverTelemetry()?.trackException({ exception: err })
             console.error(err)
             process.exit(1)
         }
