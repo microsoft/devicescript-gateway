@@ -36,6 +36,7 @@
     "applicationinsights": "^2.5.0",
     "fastify": "^4.9.2",
     "http-errors": "^2.0.0",
+    "json5": "^2.2.3",
     "node-fetch": "^2.6.7",
     "openapi-types": "^12.1.0",
     "pino-pretty": "^9.1.1",
