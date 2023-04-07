@@ -18,7 +18,7 @@
     "watch": "tsc -w",
     "start": "node dist/src/index.js",
     "azurite": "azurite --location ./.azurite --debug ./.azurite/debug.log",
-    "dev:local": "yarn build && node dev.mjs --local",
+    "dev": "yarn build && node dev.mjs --local",
     "dev:azure": "yarn build && node dev.mjs --azure",
     "logs": "node infra/logs.mjs",
     "deploy": "node infra/zipdeploy.mjs"
