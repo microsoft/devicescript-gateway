@@ -3,8 +3,9 @@ import {
     TableClient,
     TableEntity,
     TableEntityResult,
+    TableServiceClientOptions,
 } from "@azure/data-tables"
-import { BlobServiceClient, ContainerClient } from "@azure/storage-blob"
+import { BlobServiceClient, ContainerClient, StoragePipelineOptions } from "@azure/storage-blob"
 import { randomBytes } from "crypto"
 import { promisify } from "util"
 import { gunzip, gzip } from "zlib"
@@ -40,22 +41,24 @@ export async function setup() {
     const connStr = connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
     if (!connStr) throw new Error("storage connection string is empty")
 
-    devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff)
+    const tableOptions: TableServiceClientOptions = { allowInsecureConnection: process.env.DEVS_LOCALHOST === "1" }
+    const blobOptions: StoragePipelineOptions = { }
+    devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff, tableOptions)
     messageHooksTable = TableClient.fromConnectionString(
         connStr,
-        "messagehooks" + suff
+        "messagehooks" + suff, tableOptions
     )
-    scriptsTable = TableClient.fromConnectionString(connStr, "scripts" + suff)
+    scriptsTable = TableClient.fromConnectionString(connStr, "scripts" + suff, tableOptions)
     scriptVersionsTable = TableClient.fromConnectionString(
         connStr,
-        "scrver" + suff
+        "scrver" + suff, tableOptions
     )
     scriptVersionShaTable = TableClient.fromConnectionString(
         connStr,
-        "scrversha" + suff
+        "scrversha" + suff, tableOptions
     )
 
-    blobClient = BlobServiceClient.fromConnectionString(connStr)
+    blobClient = BlobServiceClient.fromConnectionString(connStr, blobOptions)
     scriptsBlobs = blobClient.getContainerClient("scripts" + suff)
 
     await devicesTable.createTable()
