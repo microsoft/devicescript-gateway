@@ -7,7 +7,8 @@ on:
 name: build
 
 env:
-    AZURE_WEBAPP_PUBLISH: "true"
+    # Uncomment to enable Azure deployment on push to main
+    # AZURE_WEBAPP_PUBLISH: "true"
     AZURE_WEBAPP_PACKAGE_PATH: "./"
     NODE_VERSION: "18.x"
 
