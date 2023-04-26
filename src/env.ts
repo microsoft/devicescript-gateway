@@ -1,4 +1,4 @@
-import { pubToDevice } from "./devutil"
+import { sendJSON } from "./apidevices"
 import { registerMessageSink } from "./messages"
 import { EnvironmentFromDevice } from "./schema"
 
@@ -7,7 +7,8 @@ export async function setup() {
         name: "environment variables",
         topicName: "env",
         ingest: async (message: EnvironmentFromDevice, device) => {
-            const { envJSON } = device.dev
+            const { dev, id } = device
+            const { envJSON } = dev
             const { fields } = message
             const env = JSON.parse(envJSON || "{}")
             if (fields?.length > 0) {
@@ -15,10 +16,7 @@ export async function setup() {
                     if (!fields.includes(field)) delete env[field]
                 }
             }
-            await pubToDevice(device.id, {
-                type: "env",
-                env,
-            })
+            await sendJSON(id, "env", env)
         },
     })
 }

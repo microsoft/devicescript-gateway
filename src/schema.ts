@@ -77,11 +77,6 @@ export interface DeviceUpdateToDevice extends DeviceMessage {
     dev: DeviceInfo
 }
 
-export interface EnvironmentToDevice extends DeviceMessage {
-    type: "env"
-    env: object
-}
-
 export interface FrameFromDevice extends DeviceMessage {
     type: "frame"
     payload64: string
@@ -111,7 +106,6 @@ export type ToDeviceMessage =
     | SetForwardingToDevice
     | PingToDevice
     | DeviceUpdateToDevice
-    | EnvironmentToDevice
 
 export type FromDeviceMessage =
     | UploadJsonFromDevice

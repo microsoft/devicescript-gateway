@@ -94,7 +94,7 @@ async function addDevice(id: DeviceId) {
     return dev
 }
 
-async function sendJSON(id: DeviceId, topic: string, json: any) {
+export async function sendJSON(id: DeviceId, topic: string, json: any) {
     const buf = Buffer.from(JSON.stringify(json), "utf-8")
     if (buf.length > MAX_WSSK_SIZE)
         throwStatus(
