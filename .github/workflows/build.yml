@@ -7,6 +7,7 @@ on:
 name: build
 
 env:
+    AZURE_WEBAPP_PUBLISH: "true"
     AZURE_WEBAPP_PACKAGE_PATH: "./"
     NODE_VERSION: "18.x"
 
@@ -29,7 +30,7 @@ jobs:
             - name: build
               run: yarn build
             - uses: azure/webapps-deploy@v2
-              if: github.ref == 'refs/heads/main' && ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+              if: github.ref == 'refs/heads/main' && env.AZURE_WEBAPP_PUBLISH
               with:
                   package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
                   publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
