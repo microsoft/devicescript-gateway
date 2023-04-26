@@ -8,7 +8,12 @@ import {
     throwStatus,
     tryParseJSON,
 } from "./util"
-import { DeviceId, DeviceInfo, FromDeviceMessage } from "./schema"
+import {
+    DeviceId,
+    DeviceInfo,
+    SendBinToDevice,
+    SendJsonToDevice,
+} from "./schema"
 import { wsskConnString } from "./wssk"
 import { fullDeviceId, pingDevice, pubToDevice } from "./devutil"
 import { fwdSockConnSettings } from "./fwdsock"
@@ -101,11 +106,12 @@ export async function sendJSON(id: DeviceId, topic: string, json: any) {
             413,
             `JSON too big (${buf.length} bytes, max ${MAX_WSSK_SIZE})`
         )
-    await pubToDevice(id, {
+    const msg = <SendJsonToDevice>{
         type: "sendJson",
-        topic,
+        devTopic: topic,
         value: json,
-    })
+    }
+    await pubToDevice(id, msg)
 }
 
 async function sendBinary(id: DeviceId, topic: string, buf: Buffer) {
@@ -114,9 +120,9 @@ async function sendBinary(id: DeviceId, topic: string, buf: Buffer) {
             413,
             `binary message too big (${buf.length} bytes, max ${MAX_WSSK_SIZE})`
         )
-    await pubToDevice(id, {
+    await pubToDevice(id, <SendBinToDevice>{
         type: "sendBin",
-        topic,
+        devTopic: topic,
         payload64: buf.toString("base64"),
     })
 }

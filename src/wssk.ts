@@ -321,14 +321,14 @@ export class ConnectedDevice {
             case "sendJson":
                 await this.sendPayload(
                     WsskDataType.JSON,
-                    msg.topic,
+                    msg.devTopic,
                     Buffer.from(JSON.stringify(msg.value), "utf-8")
                 )
                 break
             case "sendBin":
                 await this.sendPayload(
                     WsskDataType.Binary,
-                    msg.topic,
+                    msg.devTopic,
                     Buffer.from(msg.payload64, "base64")
                 )
                 break

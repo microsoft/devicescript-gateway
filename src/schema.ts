@@ -11,13 +11,13 @@ export interface DeviceMessage extends MessageBase {
 
 export interface SendJsonToDevice extends DeviceMessage {
     type: "sendJson"
-    topic: string
+    devTopic: string
     value: any
 }
 
 export interface SendBinToDevice extends DeviceMessage {
     type: "sendBin"
-    topic: string
+    devTopic: string
     payload64: string
 }
 
