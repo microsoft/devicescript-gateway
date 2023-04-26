@@ -131,6 +131,7 @@ export type DeviceInfo = TableEntityResult<{
     key: string
     lastAct: number
     metaJSON?: string
+    envJSON?: string
     statsJSON?: string
     scriptId?: string
     scriptVersion?: number

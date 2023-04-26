@@ -42,6 +42,7 @@ function externalDevice(info: DeviceInfo) {
         deployedHash: info.deployedHash,
         lastAct: info.lastAct ? new Date(info.lastAct).toISOString() : "",
         meta: tryParseJSON(info.metaJSON),
+        env: tryParseJSON(info.envJSON),
         stats: deviceStats(info),
     }
 }
