@@ -14,6 +14,13 @@ The gateway can be run locally (no cloud dependencies) or deployed to Azure.
 
 Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
+- setup Node.JS 18
+
+```bash
+nvm install 18
+nvm use 18
+```
+
 - download submodules and install dependencies
 
 ```bash
