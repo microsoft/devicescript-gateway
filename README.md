@@ -14,6 +14,12 @@ The gateway can be run locally (no cloud dependencies) or deployed to Azure.
 
 Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
+- download submodules and install dependencies
+
+```bash
+yarn setup
+```
+
 -   start azurite in a terminal
 
 ```bash
