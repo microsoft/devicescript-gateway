@@ -5,7 +5,11 @@ import {
     TableEntityResult,
     TableServiceClientOptions,
 } from "@azure/data-tables"
-import { BlobServiceClient, ContainerClient, StoragePipelineOptions } from "@azure/storage-blob"
+import {
+    BlobServiceClient,
+    ContainerClient,
+    StoragePipelineOptions,
+} from "@azure/storage-blob"
 import { randomBytes } from "crypto"
 import { promisify } from "util"
 import { gunzip, gzip } from "zlib"
@@ -38,24 +42,38 @@ export async function setup() {
         process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
         "storageAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
+    const connStr =
+        connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
     if (!connStr) throw new Error("storage connection string is empty")
 
-    const tableOptions: TableServiceClientOptions = { allowInsecureConnection: process.env.DEVS_LOCALHOST === "1" }
-    const blobOptions: StoragePipelineOptions = { }
-    devicesTable = TableClient.fromConnectionString(connStr, "devices" + suff, tableOptions)
+    const tableOptions: TableServiceClientOptions = {
+        allowInsecureConnection: process.env.DEVS_LOCALHOST === "1",
+    }
+    const blobOptions: StoragePipelineOptions = {}
+    devicesTable = TableClient.fromConnectionString(
+        connStr,
+        "devices" + suff,
+        tableOptions
+    )
     messageHooksTable = TableClient.fromConnectionString(
         connStr,
-        "messagehooks" + suff, tableOptions
+        "messagehooks" + suff,
+        tableOptions
     )
-    scriptsTable = TableClient.fromConnectionString(connStr, "scripts" + suff, tableOptions)
+    scriptsTable = TableClient.fromConnectionString(
+        connStr,
+        "scripts" + suff,
+        tableOptions
+    )
     scriptVersionsTable = TableClient.fromConnectionString(
         connStr,
-        "scrver" + suff, tableOptions
+        "scrver" + suff,
+        tableOptions
     )
     scriptVersionShaTable = TableClient.fromConnectionString(
         connStr,
-        "scrversha" + suff, tableOptions
+        "scrversha" + suff,
+        tableOptions
     )
 
     blobClient = BlobServiceClient.fromConnectionString(connStr, blobOptions)
@@ -255,6 +273,7 @@ interface ScriptInfo {
     version: number
     name: string
     metaJSON: string
+    envJSON: string
     updated: number
     sha?: string
 }
@@ -266,6 +285,7 @@ export interface ScriptHeader {
     version: number
     updated: number
     meta: {}
+    env: {}
 }
 
 export interface FullScript extends ScriptHeader {
@@ -286,6 +306,7 @@ function toUserScript(
         name: v.name,
         version: v.version,
         meta: JSON.parse(v.metaJSON || "{}"),
+        env: JSON.parse(v.envJSON || "{}"),
         updated,
     }
 }
@@ -296,6 +317,15 @@ export function stringifyMeta(meta: {}) {
     const maxMeta = 4000
     if (r.length > maxMeta)
         throwStatus(413, `meta too big ${r.length} chars (limit ${maxMeta})`)
+    return r
+}
+
+export function stringifyEnv(env: {}) {
+    if (!env) return "{}"
+    const r = JSON.stringify(env)
+    const maxEnv = 4000
+    if (r.length > maxEnv)
+        throwStatus(413, `env too big ${r.length} chars (limit ${maxEnv})`)
     return r
 }
 
@@ -399,6 +429,7 @@ async function createScriptSnapshot(
 export interface ScriptProperties {
     name?: string
     meta?: {}
+    env?: {}
     body?: ScriptBody
 }
 
@@ -411,6 +442,7 @@ export async function createScript(part: string, props: ScriptProperties) {
             version: 0,
             name: "no name",
             meta: {},
+            env: {},
             updated: 0,
         },
         props
@@ -431,7 +463,7 @@ async function updateEntity<T extends {}>(
         const post = JSON.stringify(d)
         if (pre == post) return d
         try {
-            await client.updateEntity(d as any, "Replace", { etag: d.etag })
+            await client.updateEntity(d as any, "Replace")
             return d
         } catch (e) {
             await delay(Math.random() * 50 + 10)
@@ -451,6 +483,7 @@ export async function updateScript(
         version: newVersion,
         name: updates.name || scr.name,
         metaJSON: stringifyMeta(updates.meta || scr.meta),
+        envJSON: stringifyEnv(updates.env || scr.env),
         updated: Date.now(),
     }
     const versionEntry: ScriptInfo = {

@@ -77,6 +77,7 @@ export function generateOpenApiSpec() {
     const devProps: Record<string, PlainSchema> = {
         "name?": sString("User-assigned name of device"),
         "meta?": sObj({}),
+        "env?": sObj({}),
         "scriptId?": scriptId,
         "scriptVersion?": versionId,
     }

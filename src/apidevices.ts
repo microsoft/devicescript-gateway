@@ -22,6 +22,7 @@ import {
     getDeviceList,
     getScript,
     listMessageHooks,
+    stringifyEnv,
     stringifyMeta,
     updateDevice,
 } from "./storage"
@@ -42,6 +43,7 @@ function externalDevice(info: DeviceInfo) {
         deployedHash: info.deployedHash,
         lastAct: info.lastAct ? new Date(info.lastAct).toISOString() : "",
         meta: tryParseJSON(info.metaJSON),
+        env: tryParseJSON(info.envJSON),
         stats: deviceStats(info),
     }
 }
@@ -127,7 +129,7 @@ function devId(part: string, devid: string): DeviceId {
 }
 
 async function patchDevice(id: DeviceId, req: FastifyRequest) {
-    let { name, meta, scriptId, scriptVersion } = req.body as any
+    let { name, meta, env, scriptId, scriptVersion } = req.body as any
     // null -> ""
     if (scriptId === null) scriptId = ""
     if (name != undefined) checkString(name)
@@ -157,6 +159,7 @@ async function patchDevice(id: DeviceId, req: FastifyRequest) {
     await updateDevice(id, d => {
         if (name != undefined) d.name = name
         if (meta != undefined) d.metaJSON = stringifyMeta(meta)
+        if (env !== undefined) d.envJSON = stringifyEnv(env)
         if (scriptId != undefined) {
             d.scriptId = scriptId
             d.scriptVersion = scriptVersion

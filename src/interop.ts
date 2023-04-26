@@ -3,7 +3,6 @@ export {
     WsskDataType,
     DebugInfo,
     FunctionDebugInfo,
-    RoleDebugInfo,
     VarDebugInfo,
     SrcMap,
     WsskStreamingType,

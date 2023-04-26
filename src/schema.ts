@@ -77,6 +77,11 @@ export interface DeviceUpdateToDevice extends DeviceMessage {
     dev: DeviceInfo
 }
 
+export interface EnvironmentToDevice extends DeviceMessage {
+    type: "env"
+    env: object
+}
+
 export interface FrameFromDevice extends DeviceMessage {
     type: "frame"
     payload64: string
@@ -93,6 +98,10 @@ export interface LogsFromDevice extends DeviceMessage {
     logs: string[]
 }
 
+export interface EnvironmentFromDevice extends DeviceMessage {
+    type: "env"
+    fields?: string[]
+}
 
 export type ToDeviceMessage =
     | SendBinToDevice
@@ -102,6 +111,7 @@ export type ToDeviceMessage =
     | SetForwardingToDevice
     | PingToDevice
     | DeviceUpdateToDevice
+    | EnvironmentToDevice
 
 export type FromDeviceMessage =
     | UploadJsonFromDevice
@@ -111,6 +121,7 @@ export type FromDeviceMessage =
     | WarningFromDevice
     | ExnFromDevice
     | LogsFromDevice
+    | EnvironmentFromDevice
 
 export function zeroDeviceStats(): DeviceStats {
     return {
@@ -131,8 +142,10 @@ export type DeviceInfo = TableEntityResult<{
     key: string
     lastAct: number
     metaJSON?: string
+    envJSON?: string
     statsJSON?: string
     scriptId?: string
     scriptVersion?: number
     deployedHash?: string
-}> & DeviceId
+}> &
+    DeviceId
