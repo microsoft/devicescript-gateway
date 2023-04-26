@@ -463,7 +463,7 @@ async function updateEntity<T extends {}>(
         const post = JSON.stringify(d)
         if (pre == post) return d
         try {
-            await client.updateEntity(d as any, "Replace", { etag: d.etag })
+            await client.updateEntity(d as any, "Replace")
             return d
         } catch (e) {
             await delay(Math.random() * 50 + 10)
