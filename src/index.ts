@@ -16,6 +16,7 @@ import { setup as appInsightsSetup, serverTelemetry } from "./azure/appinsights"
 import { setup as eventHubSetup } from "./azure/eventhub"
 import { setup as storageSetup, defaultPartition } from "./storage"
 import { setup as envSetup } from "./env"
+import { setup as storageQueueSetup } from "./azure/storagequeue"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
@@ -124,6 +125,7 @@ async function main() {
 
     await storageSetup()
     await eventHubSetup()
+    await storageQueueSetup()
     await envSetup()
     await initAuth(server)
     await wsskInit(server)

@@ -1,4 +1,4 @@
-import { EventHubProducerClient } from "@azure/event-hubs"
+import { QueueServiceClient } from "@azure/storage-queue"
 import { serverTelemetry } from "./appinsights"
 import { registerMessageSink } from "../messages"
 import { createSecretClient } from "../secrets"
@@ -6,40 +6,40 @@ import { createSecretClient } from "../secrets"
 export async function setup() {
     const secrets = createSecretClient()
     const connectionStringSecretName =
-        process.env["DEVS_EVENT_HUB_CONNECTION_STRING_SECRET"] ||
-        "eventHubAccountConnectionString"
+        process.env["DEVS_STORAGE_QUEUE_CONNECTION_STRING_SECRET"] ||
+        "storageQueueAccountConnectionString"
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
     const connStr = connStrSecret.value
     if (!connStr) {
         console.log(
-            "no Azure EventHub connection string secret, skipping registration"
+            "no Azure Storage Queue connection string secret, skipping registration"
         )
         return
     }
 
-    const producer = new EventHubProducerClient(connStr, "messages")
+    const queueServiceClient = QueueServiceClient.fromConnectionString(connStr)
+    const queueClient = queueServiceClient.getQueueClient("messages")
     registerMessageSink({
-        name: "event hub",
+        name: "storage queue",
         ingest: async (message, device) => {
-            const batch = await producer.createBatch()
             const correlationId = device.sessionId
             const body = {
                 context: {
                     deviceId: device.id,
                     deviceName: device.dev.name,
+                    correlationId,
                 },
                 data: message,
             }
-            if (
-                !batch.tryAdd({
-                    body,
-                    correlationId,
-                })
-            ) {
+            // JSON may generate invalid XML content so we default to base64 encoding instead
+            const buffer = Buffer.from(JSON.stringify(body))
+            const b64 = buffer.toString("base64")
+            const resp = await queueClient.sendMessage(b64)
+            if (resp.errorCode) {
                 serverTelemetry()?.trackEvent({
-                    name: "messages.eventhub.push.fail",
+                    name: "messages.storagequeue.push.fail",
                 })
-            } else await producer.sendBatch(batch)
+            }
         },
     })
 }
