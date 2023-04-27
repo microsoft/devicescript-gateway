@@ -6,7 +6,6 @@ import fastifyCors from "@fastify/cors"
 import websocketPlugin from "@fastify/websocket"
 import { selfHost, selfUrl, throwStatus } from "./util"
 import fastifyStatic from "@fastify/static"
-
 import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
