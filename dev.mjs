@@ -21,13 +21,14 @@ ${process.env.DEVS_CONNECTION_STRING}
 
 `
     )
-    console.log(
-        `- Visual Studio Code connection string (local network):
+    if (address !== "127.0.0.1")
+        console.log(
+            `- Visual Studio Code connection string (local network):
         
 ${process.env.DEVS_CONNECTION_STRING.replace("127.0.0.1", address)}
 
 `
-    )
+        )
     console.log(`- Swagger: http://${process.env.WEBSITE_HOSTNAME}/swagger/`)
     console.log(
         `- More documentation at https://microsoft.github.io/devicescript/developer/cloud/gateway`

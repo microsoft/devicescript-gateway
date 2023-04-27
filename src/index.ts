@@ -129,8 +129,27 @@ async function main() {
     await wsskInit(server)
     await fwdSockInit(server)
 
-    server.get("/", async req => {
-        return "Nothing to see here, move along."
+    server.get("/", async (req, resp) => {
+        resp.type("text/html")
+        return `<html>
+        <head>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+            <style>
+                body {
+                    margin: 1rem;
+                }
+            </style>
+        </head>
+        <body>
+        <h1>Development DeviceScript Gateway</h1>
+        <ul>
+            <li>Open <a href='./swagger/'>OpenAPI dashboard (swagger)</a>.</li>
+            <li><a href='https://microsoft.github.io/devicescript/developer/cloud/gateway'>Documentation</a></li>
+        </ul>
+        </body>
+        </html>`
     })
 
     server.register(
