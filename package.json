@@ -8,7 +8,8 @@
     "./dist/**"
   ],
   "scripts": {
-    "setup": "git submodule update --init --recursive && git pull && yarn install --frozen-lockfile",
+    "preinstall": "git submodule update --init --recursive && git pull",
+    "setup": "yarn install --frozen-lockfile",
     "connection": "cd infra && zx ./connection.mjs",
     "provision": "cd infra && zx ./provision.mjs",
     "unprovision": "cd infra && zx ./unprovision.mjs",
