@@ -3,7 +3,7 @@ import { serverTelemetry } from "./appinsights"
 import { registerMessageSink } from "../messages"
 import { readStorageConnectionString } from "../storage"
 
-const MESSAGE_TIME_TO_LIVE = 60
+const MESSAGE_TIME_TO_LIVE = 360
 
 export async function setup() {
     const connStr = await readStorageConnectionString()
@@ -15,9 +15,11 @@ export async function setup() {
     }
 
     const queueServiceClient = QueueServiceClient.fromConnectionString(connStr)
+    await queueServiceClient.createQueue("messages")
     const queueClient = queueServiceClient.getQueueClient("messages")
     registerMessageSink({
         name: "storage queue",
+        topicName: "*",
         ingest: async (message, device) => {
             const correlationId = device.sessionId
             const body = {

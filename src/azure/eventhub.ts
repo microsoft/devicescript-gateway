@@ -20,6 +20,7 @@ export async function setup() {
     const producer = new EventHubProducerClient(connStr, "messages")
     registerMessageSink({
         name: "event hub",
+        topicName: "*",
         ingest: async (message, device) => {
             const batch = await producer.createBatch()
             const correlationId = device.sessionId
