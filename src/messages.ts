@@ -10,7 +10,7 @@ export interface MessageSink {
     /**
      * may be undefined for 'unmarked' messages
      */
-    topicName?: string
+    topicName: string | "*"
 
     /**
      * Ingest incoming message
@@ -43,9 +43,9 @@ export async function ingestMessage(
     if (!message) return
 
     // collect sinks interrested
-    const sinks = messageSinks.filter(
-        ({ topicName: type }) => type === topicName
-    )
+    let sinks = messageSinks.filter(({ topicName: type }) => type === topicName)
+    if (!sinks.length)
+        sinks = messageSinks.filter(({ topicName }) => topicName === "*")
 
     // dispatch
     await Promise.all(sinks.map(sink => sink.ingest(message, device)))

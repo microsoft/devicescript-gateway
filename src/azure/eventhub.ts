@@ -12,7 +12,7 @@ export async function setup() {
     const connStr = connStrSecret.value
     if (!connStr) {
         console.log(
-            "no EventHub connection string secret, skipping registration"
+            "no Azure EventHub connection string secret, skipping registration"
         )
         return
     }
@@ -20,6 +20,7 @@ export async function setup() {
     const producer = new EventHubProducerClient(connStr, "messages")
     registerMessageSink({
         name: "event hub",
+        topicName: "*",
         ingest: async (message, device) => {
             const batch = await producer.createBatch()
             const correlationId = device.sessionId
