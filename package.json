@@ -37,7 +37,7 @@
     "@fastify/websocket": "^7.1.0",
     "aedes": "^0.48.0",
     "applicationinsights": "^2.5.0",
-    "fastify": "^4.9.2",
+    "fastify": "^4.10.2",
     "http-errors": "^2.0.0",
     "json5": "^2.2.3",
     "node-fetch": "^2.6.7",
