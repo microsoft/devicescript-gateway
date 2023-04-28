@@ -48,11 +48,13 @@ You can also access the Swagger sandbox locally:
 -   Click Authorize
 -   Use user/password `devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==`
 
-### GitHub CodeSpaces, CodeSandbox.io
+### CodeSandbox.io
 
-Running the gateway in GitHub Codespaces/CodeSandbox will give you an addressable web server that will be reachable by devices which the codespace
+Running the gateway in Codesandbox.io will give you an addressable web server that will be reachable by devices which the codespace
 is active. It is an easy to get a development gateway available on the web without having to deal with network issues.
-The tools will automatically detect CodeSpaces/CodeSandbox and self configure.
+The tools will automatically detect Codesandbox.io and self configure.
+
+- To open this repo in Codesandbox.io, https://codesandbox.io/p/github/microsoft/devicescript-gateway/main
 
 ## Azure services
 
