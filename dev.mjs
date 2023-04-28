@@ -1,4 +1,5 @@
 import dotenv from "dotenv"
+import { expand } from "dotenv-expand"
 import { networkInterfaces } from "os"
 
 const azure = process.argv.includes("--azure")
@@ -6,8 +7,15 @@ const azure = process.argv.includes("--azure")
 const out = dotenv.config({ path: azure ? "./.env" : "./local.env" })
 if (out.error) throw out.error
 
-if (!azure) {
-    // resolve local network ip address
+const port = process.env.PORT || (process.env.PORT = "7071")
+// codespace special handling
+const { CODESPACE_NAME, GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN } = process.env
+if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
+    process.env.WEBSITE_HOSTNAME = `${CODESPACE_NAME}-${port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+    process.env.WEBSITE_PROTOCOL = "https"
+    console.log(`GitHub Codespace environment detected...`)
+    console.warn(`- make sure to change the visibility of port '${port}' to 'Public'`)
+} else if (!azure) {
     const address = (() => {
         const nis = networkInterfaces()
         for (const interfaceName in nis) {
@@ -22,24 +30,20 @@ if (!azure) {
         }
         return null
     })()
+    process.env.WEBSITE_HOSTNAME = `${address}:${port}`
+}
 
-    console.log("Using local web server and Azurite")
+expand(out)
+
+if (!azure) {
     console.log("- make sure to launch azurite with `yarn azurite`")
     console.log(
-        `- Visual Studio Code connection string (localhost): 
+        `- Visual Studio Code connection string: 
         
 ${process.env.DEVS_CONNECTION_STRING}
 
 `
     )
-    if (address && address !== "127.0.0.1")
-        console.log(
-            `- Visual Studio Code connection string (local network):
-        
-${process.env.DEVS_CONNECTION_STRING.replace("127.0.0.1", address)}
-
-`
-        )
     console.log(
         `- More documentation at https://microsoft.github.io/devicescript/developer/cloud/gateway`
     )
