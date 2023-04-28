@@ -3,14 +3,18 @@
 This project contains a prototype development gateway implementation
 for the built-in DeviceScript cloud integration.
 
-The gateway can be run locally (no cloud dependencies) or deployed to Azure.
+The gateway can be run locally (no cloud dependencies), in GitHub CodeSpaces or deployed to Azure.
 
 -   [Read the documentation](https://microsoft.github.io/devicescript/developer/gateway)
 
 | :exclamation: This implementation is for prototyping only and not meant for production. |
 | --------------------------------------------------------------------------------------- |
 
-## Local development
+## Local development / GitHub Codespaces
+
+Running the gateway in GitHub codespaces will give you an addressable web server that will be reachable by devices which the codespace
+is active. It is an easy to get a development gateway available on the web without having to deal with network issues.
+The tools will automatically detect CodeSpaces and self configure.
 
 Make sure to follow the provisioning steps in the documentation before trying to run locally.
 
@@ -38,6 +42,13 @@ yarn azurite
 ```bash
 yarn dev
 ```
+
+The terminal output will provide the connection string to connect 
+to to the gateway from the DeviceScript Visual Studio Code extension.
+
+-   **in GitHub Codespaces**, change the visibility of port `7071` to `Public`
+
+You can also access the Swagger sandbox locally:
 
 -   after running head to http://127.0.0.1:7071/swagger/ or otherwise the live site
 -   Click Authorize
