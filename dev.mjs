@@ -1,3 +1,5 @@
+#!/usr/bin/env zx
+import 'zx/globals'
 import dotenv from "dotenv"
 import { expand } from "dotenv-expand"
 import { networkInterfaces } from "os"
@@ -50,7 +52,7 @@ else if (!azure) {
 expand(out)
 
 if (!azure) {
-    console.log("- make sure to launch azurite with `yarn azurite`")
+    $`yarn azurite`
     console.log(
         `- Visual Studio Code connection string: 
         

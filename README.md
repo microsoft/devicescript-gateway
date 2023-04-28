@@ -25,12 +25,6 @@ nvm use 18
 yarn setup
 ```
 
--   start azurite in a terminal
-
-```bash
-yarn azurite
-```
-
 -   start a local instance using azurite
 
 ```bash

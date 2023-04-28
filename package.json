@@ -19,8 +19,8 @@
     "start": "node dist/src/index.js",
     "azurite": "azurite --location ./.azurite",
     "azurite:dbg": "azurite --location ./.azurite --debug ./.azurite/debug.log",
-    "dev": "yarn build && node dev.mjs --local",
-    "dev:azure": "yarn build && node dev.mjs --azure",
+    "dev": "yarn build && zx dev.mjs --local",
+    "dev:azure": "yarn build && zx dev.mjs --azure",
     "logs": "node infra/logs.mjs",
     "deploy": "node infra/zipdeploy.mjs"
   },
