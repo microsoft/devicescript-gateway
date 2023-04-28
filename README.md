@@ -10,13 +10,7 @@ The gateway can be run locally (no cloud dependencies), in GitHub CodeSpaces or 
 | :exclamation: This implementation is for prototyping only and not meant for production. |
 | --------------------------------------------------------------------------------------- |
 
-## Local development / GitHub Codespaces
-
-Running the gateway in GitHub codespaces will give you an addressable web server that will be reachable by devices which the codespace
-is active. It is an easy to get a development gateway available on the web without having to deal with network issues.
-The tools will automatically detect CodeSpaces and self configure.
-
-Make sure to follow the provisioning steps in the documentation before trying to run locally.
+## Local development
 
 - setup Node.JS 18
 
@@ -53,6 +47,12 @@ You can also access the Swagger sandbox locally:
 -   after running head to http://127.0.0.1:7071/swagger/ or otherwise the live site
 -   Click Authorize
 -   Use user/password `devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==`
+
+### GitHub CodeSpaces, CodeSandbox.io
+
+Running the gateway in GitHub Codespaces/CodeSandbox will give you an addressable web server that will be reachable by devices which the codespace
+is active. It is an easy to get a development gateway available on the web without having to deal with network issues.
+The tools will automatically detect CodeSpaces/CodeSandbox and self configure.
 
 ## Azure services
 
