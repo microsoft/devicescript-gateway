@@ -36,7 +36,7 @@ export interface ScriptBody {
     program: DebugInfo
 }
 
-export async function setup() {
+export async function readStorageConnectionString() {
     const secrets = createSecretClient()
     const connectionStringSecretName =
         process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
@@ -44,6 +44,11 @@ export async function setup() {
     const connStrSecret = await secrets.getSecret(connectionStringSecretName)
     const connStr =
         connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
+    return connStr
+}
+
+export async function setup() {
+    const connStr = await readStorageConnectionString()
     if (!connStr) throw new Error("storage connection string is empty")
 
     const tableOptions: TableServiceClientOptions = {

@@ -1,16 +1,13 @@
 import { QueueServiceClient } from "@azure/storage-queue"
 import { serverTelemetry } from "./appinsights"
 import { registerMessageSink } from "../messages"
-import { createSecretClient } from "../secrets"
+import { readStorageConnectionString } from "../storage"
+
+const MESSAGE_TIME_TO_LIVE = 60
 
 export async function setup() {
-    const secrets = createSecretClient()
-    const connectionStringSecretName =
-        process.env["DEVS_STORAGE_QUEUE_CONNECTION_STRING_SECRET"] ||
-        "storageQueueAccountConnectionString"
-    const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value
-    if (!connStr) {
+    const connStr = await readStorageConnectionString()
+    if (!/QueueEndpoint=/.test(connStr)) {
         console.log(
             "no Azure Storage Queue connection string secret, skipping registration"
         )
@@ -34,7 +31,9 @@ export async function setup() {
             // JSON may generate invalid XML content so we default to base64 encoding instead
             const buffer = Buffer.from(JSON.stringify(body))
             const b64 = buffer.toString("base64")
-            const resp = await queueClient.sendMessage(b64)
+            const resp = await queueClient.sendMessage(b64, {
+                messageTimeToLive: MESSAGE_TIME_TO_LIVE,
+            })
             if (resp.errorCode) {
                 serverTelemetry()?.trackEvent({
                     name: "messages.storagequeue.push.fail",
