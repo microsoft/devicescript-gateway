@@ -30,6 +30,8 @@ import {
     WsskDataType,
     WsskStreamingType,
     parseStackFrame,
+    IMAGE_MIN_LENGTH,
+    checkMagic
 } from "./interop"
 import { ingestLogs, ingestMessage } from "./messages"
 import {
@@ -380,11 +382,10 @@ export class ConnectedDevice {
             try {
                 const body = await getScriptBody(d.scriptId, d.scriptVersion)
                 const tmp = Buffer.from(body.program.binary.hex, "hex")
-                if (tmp.length < 128) this.warn(`compiled program too short`)
+                if (tmp.length < IMAGE_MIN_LENGTH) this.warn(`compiled program too short`)
                 else {
-                    const hd = tmp.slice(0, 8).toString("hex")
-                    if (hd != "446576530a7e6a9a") {
-                        this.warn(`compiled program bad magic ${hd}`)
+                    if (!checkMagic(tmp)) {
+                        this.warn(`compiled program bad magic ${tmp.slice(0, 8).toString("hex")}`)
                     } else this.setDeploy(tmp)
                 }
             } catch (e: any) {
