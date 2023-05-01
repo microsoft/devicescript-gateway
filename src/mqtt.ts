@@ -57,8 +57,8 @@ export async function setup() {
     })
     client.on("message", async function (topic, message) {
         const { deviceId, msgTopic } =
-            /^devs\/(?<deviceId>.+?)\/(?<msgTopic>.+)$/.exec(topic)?.groups ||
-            {}
+            /^devs\/to\/(?<deviceId>.+?)\/(?<msgTopic>.+)$/.exec(topic)
+                ?.groups || {}
         if (!deviceId || !msgTopic) return // unknown topic
         const did: DeviceId = {
             partitionKey: defaultPartition,
