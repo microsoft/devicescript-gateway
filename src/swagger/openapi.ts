@@ -55,6 +55,16 @@ export function generateOpenApiSpec() {
 
     const methodParam = sString("Method name", "Must match the value on device")
 
+    const gatewaySchema = define(
+        "GatewaySchema",
+        sObj({
+            mqttServer: sString(
+                "MQTT server",
+                "URL(:PORT) of the MQTT server, if any"
+            ),
+        })
+    )
+
     const eventSchema = define(
         "EventSchema",
         sObj({
@@ -91,24 +101,16 @@ export function generateOpenApiSpec() {
                 "Last Connected",
                 "When was device last connected"
             ),
+            mqttTopic: sString(
+                "MQTT Topic prefix",
+                "Topic prefix to filter MQTT messages from/to this device"
+            ),
             ...allNonOptional(devProps),
             deployedHash: sString(
                 "SHA256 Hash of Currently Deployed Script",
                 "This property persists when the device is disconnected, so may not be up to date"
             ),
         })
-    )
-    const serviceSchema = sString(
-        "Service Name",
-        "Type of sensor (eg. 'temperature')"
-    )
-    const sensorIdSchema = sString(
-        "Sensor ID",
-        "Unique identifier of the sensor"
-    )
-    const serviceIdxSchema = sNumber(
-        "Service Index",
-        "Typically 0; used when there is more than one instance of service in the sensor"
     )
 
     post(
@@ -127,6 +129,19 @@ export function generateOpenApiSpec() {
                 ),
             ],
             eventSchema
+        )
+    )
+
+    get(
+        "/info",
+        action(
+            "Information",
+            "Information about the Gateway",
+            "Various information about the gateway server",
+            [],
+            {
+                "200": response("Information", gatewaySchema),
+            }
         )
     )
 

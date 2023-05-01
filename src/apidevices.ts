@@ -31,6 +31,7 @@ import {
     stringifyMeta,
     updateDevice,
 } from "./storage"
+import { mqttTopicPrefix } from "./mqtt"
 
 const CONNECTED_TIMEOUT = 2 * 60 * 1000
 export const MAX_WSSK_SIZE = 230 // for to-device JSON and binary messages
@@ -45,6 +46,7 @@ function externalDevice(info: DeviceInfo) {
         conn,
         scriptId: info.scriptId,
         scriptVersion: info.scriptVersion,
+        mqttTopic: mqttTopicPrefix(info),
         deployedHash: info.deployedHash,
         lastAct: info.lastAct ? new Date(info.lastAct).toISOString() : "",
         meta: tryParseJSON(info.metaJSON),

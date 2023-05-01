@@ -1,4 +1,4 @@
-import { connect } from "mqtt" // import connect from mqtt
+import { MqttClient, connect } from "mqtt" // import connect from mqtt
 import { serverTelemetry } from "./azure/appinsights"
 import { registerMessageSink } from "./messages"
 import { getSecret } from "./secrets"
@@ -6,20 +6,31 @@ import { defaultPartition, getDevice } from "./storage"
 import { sendJSON } from "./apidevices"
 import { DeviceId } from "./schema"
 
+let client: MqttClient
+let serverUrl: string
+
+export function mqttTopicPrefix(deviceid: DeviceId) {
+    return client ? `devs/${deviceid.rowKey}` : undefined
+}
+
+export function mqttServer() {
+    return serverUrl
+}
+
 export async function setup() {
-    const connStr = await getSecret(
+    serverUrl = await getSecret(
         "mqttConnectionString",
-        "DEVS_MQTT_CONNECTION_STRING_SECRET",
-        "DEVS_MQTT_CONNETION_STRING"
+        "DEVS_MQTT_SERVER_SECRET",
+        "DEVS_MQTT_SERVER"
     )
-    if (!connStr) {
+    if (!serverUrl) {
         console.log("no MQTT connection string secret, skipping registration")
         return
     }
 
-    console.log("registering MQTT broker")
+    console.log(`MQTT server: ${serverUrl}`)
     const telemetry = serverTelemetry()
-    const client = connect(connStr) // create a client
+    client = connect(serverUrl) // create a client
 
     // device to mqtt
     registerMessageSink({
@@ -28,7 +39,7 @@ export async function setup() {
         ingest: async (topic, message, device) => {
             if (!client.connected) return
 
-            const mqTopic = `devs/from/${device.dev.rowKey}/${topic}`
+            const mqTopic = `${mqttTopicPrefix(device.dev)}/from/${topic}`
             client.publish(
                 mqTopic,
                 Buffer.from(JSON.stringify(message), "utf-8"),
@@ -46,18 +57,18 @@ export async function setup() {
     // dispatch messages to devices
     client.on("connect", () => {
         // devs/deviceid/json/topic
-        client.subscribe("devs/to/+/#", err => {
+        client.subscribe("devs/+/to/#", err => {
             if (err) {
                 console.error(err)
                 telemetry?.trackException({ exception: err })
             } else {
-                console.log(`mqtt: subscribe to 'devs/to/+/#'`)
+                console.log(`mqtt: subscribe to 'devs/+/to/#'`)
             }
         })
     })
     client.on("message", async function (topic, message) {
         const { deviceId, msgTopic } =
-            /^devs\/to\/(?<deviceId>.+?)\/(?<msgTopic>.+)$/.exec(topic)
+            /^devs\/(?<deviceId>.+?)\/to\/(?<msgTopic>.+)$/.exec(topic)
                 ?.groups || {}
         if (!deviceId || !msgTopic) return // unknown topic
         const did: DeviceId = {

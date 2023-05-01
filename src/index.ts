@@ -18,6 +18,7 @@ import { setup as storageSetup, defaultPartition } from "./storage"
 import { setup as envSetup } from "./env"
 import { setup as storageQueueSetup } from "./azure/storagequeue"
 import { setup as mqttSetup } from "./mqtt"
+import { initGatewayRoutes } from "./apigateway"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
@@ -162,6 +163,7 @@ async function main() {
 
             await initHubRoutes(server)
             await initScriptRoutes(server)
+            await initGatewayRoutes(server)
 
             server.all("*", async req => {
                 throwStatus(404, "no such API")
