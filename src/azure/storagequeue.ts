@@ -14,18 +14,20 @@ export async function setup() {
         return
     }
 
+    console.log("registering Azure Storage Queue message sink")
     const queueServiceClient = QueueServiceClient.fromConnectionString(connStr)
     await queueServiceClient.createQueue("messages")
     const queueClient = queueServiceClient.getQueueClient("messages")
     registerMessageSink({
         name: "storage queue",
         topicName: "*",
-        ingest: async (message, device) => {
+        ingest: async (topic, message, device) => {
             const correlationId = device.sessionId
             const body = {
                 context: {
                     deviceId: device.id,
                     deviceName: device.dev.name,
+                    topic,
                     correlationId,
                 },
                 data: message,

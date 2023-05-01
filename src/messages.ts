@@ -16,7 +16,11 @@ export interface MessageSink {
      * Ingest incoming message
      * @param message
      */
-    ingest(message: Message, device: ConnectedDevice): Promise<void>
+    ingest(
+        topic: string,
+        message: Message,
+        device: ConnectedDevice
+    ): Promise<void>
 }
 
 const messageSinks: MessageSink[] = []
@@ -36,19 +40,19 @@ export function registerMessageSink(sink: MessageSink) {
  * @returns
  */
 export async function ingestMessage(
-    topicName: string,
+    topic: string,
     message: Message,
     device: ConnectedDevice
 ) {
     if (!message) return
 
     // collect sinks interrested
-    let sinks = messageSinks.filter(({ topicName: type }) => type === topicName)
+    let sinks = messageSinks.filter(({ topicName: type }) => type === topic)
     if (!sinks.length)
         sinks = messageSinks.filter(({ topicName }) => topicName === "*")
 
     // dispatch
-    await Promise.all(sinks.map(sink => sink.ingest(message, device)))
+    await Promise.all(sinks.map(sink => sink.ingest(topic, message, device)))
 }
 
 export type LogSink = (logs: string[], device: ConnectedDevice) => Promise<void>

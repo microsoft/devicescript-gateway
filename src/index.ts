@@ -17,6 +17,7 @@ import { setup as eventHubSetup } from "./azure/eventhub"
 import { setup as storageSetup, defaultPartition } from "./storage"
 import { setup as envSetup } from "./env"
 import { setup as storageQueueSetup } from "./azure/storagequeue"
+import { setup as mqttSetup } from "./mqtt"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
@@ -126,6 +127,7 @@ async function main() {
     await storageSetup()
     await eventHubSetup()
     await storageQueueSetup()
+    await mqttSetup()
     await envSetup()
     await initAuth(server)
     await wsskInit(server)

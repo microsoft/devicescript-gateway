@@ -114,7 +114,7 @@ export async function sendJSON(id: DeviceId, topic: string, json: any) {
     await pubToDevice(id, msg)
 }
 
-async function sendBinary(id: DeviceId, topic: string, buf: Buffer) {
+export async function sendBinary(id: DeviceId, topic: string, buf: Buffer) {
     if (buf.length > MAX_WSSK_SIZE)
         throwStatus(
             413,

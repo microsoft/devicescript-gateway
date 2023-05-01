@@ -6,7 +6,7 @@ export async function setup() {
     registerMessageSink({
         name: "environment variables",
         topicName: "env",
-        ingest: async (message: EnvironmentFromDevice, device) => {
+        ingest: async (topic: string, message: EnvironmentFromDevice, device) => {
             const { dev, id } = device
             const { envJSON } = dev
             const { fields } = message
