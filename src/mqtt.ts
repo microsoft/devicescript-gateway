@@ -1,18 +1,17 @@
 import { connect } from "mqtt" // import connect from mqtt
 import { serverTelemetry } from "./azure/appinsights"
 import { registerMessageSink } from "./messages"
-import { createSecretClient } from "./secrets"
-import { pubToDevice } from "./devutil"
+import { getSecret } from "./secrets"
 import { defaultPartition, getDevice } from "./storage"
-import { sendBinary, sendJSON } from "./apidevices"
+import { sendJSON } from "./apidevices"
 import { DeviceId } from "./schema"
 
 export async function setup() {
-    const secrets = createSecretClient()
-    const connectionStringSecretName =
-        process.env.DEVS_MQTT_CONNECTION_STRING_SECRET || "mqttConnectionString"
-    const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value
+    const connStr = await getSecret(
+        "mqttConnectionString",
+        "DEVS_MQTT_CONNECTION_STRING_SECRET",
+        "DEVS_MQTT_CONNETION_STRING"
+    )
     if (!connStr) {
         console.log("no MQTT connection string secret, skipping registration")
         return
@@ -51,6 +50,8 @@ export async function setup() {
             if (err) {
                 console.error(err)
                 telemetry?.trackException({ exception: err })
+            } else {
+                console.log(`mqtt: subscribe to 'devs/to/+/#'`)
             }
         })
     })
@@ -65,6 +66,7 @@ export async function setup() {
         }
         const dev = await getDevice(did)
         if (!dev) return // unknown device
+
         await sendJSON(did, msgTopic, JSON.parse(message.toString("utf-8")))
     })
 }

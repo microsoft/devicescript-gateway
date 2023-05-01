@@ -10,7 +10,7 @@ import * as mq from "./mq"
 import { wsskInit } from "./wssk"
 import { fwdSockInit } from "./fwdsock"
 
-import { createSecretClient } from "./secrets"
+import { getSecret } from "./secrets"
 import { generateOpenApiSpec } from "./swagger/openapi"
 import { setup as appInsightsSetup, serverTelemetry } from "./azure/appinsights"
 import { setup as eventHubSetup } from "./azure/eventhub"
@@ -21,13 +21,13 @@ import { setup as mqttSetup } from "./mqtt"
 
 async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
-    const secrets = createSecretClient()
-    const passwordSecretName =
-        process.env["DEVS_PASSWORDS_SECRET"] || "passwords"
-    const passwordsSecret = await secrets.getSecret(passwordSecretName)
-    if (!passwordsSecret.value) throw new Error("passwords is empty")
+    const passwordsSecret = await getSecret(
+        "passwords",
+        "DEVS_PASSWORDS_SECRET"
+    )
+    if (!passwordsSecret) throw new Error("passwords is empty")
 
-    const passwords = passwordsSecret.value
+    const passwords = passwordsSecret
         .split(/,/)
         .map(s => s.trim())
         .filter(s => /^\w+:.+/.test(s))

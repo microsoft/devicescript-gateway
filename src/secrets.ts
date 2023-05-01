@@ -17,3 +17,18 @@ export function createSecretClient(): Secrets {
         },
     }
 }
+
+export async function getSecret(
+    defaultName: string,
+    secretNameEnvironmentName: string,
+    environmentName?: string
+) {
+    const secrets = createSecretClient()
+    const connectionStringSecretName =
+        process.env[secretNameEnvironmentName] || defaultName
+    const connStrSecret = await secrets.getSecret(connectionStringSecretName)
+    const connStr =
+        connStrSecret.value ||
+        (environmentName ? process.env[environmentName] : undefined)
+    return connStr
+}

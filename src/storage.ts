@@ -16,7 +16,7 @@ import { gunzip, gzip } from "zlib"
 import { pubToDevice } from "./devutil"
 import { DeviceId, DeviceInfo, DeviceStats, zeroDeviceStats } from "./schema"
 import { delay, throwStatus } from "./util"
-import { createSecretClient } from "./secrets"
+import { getSecret } from "./secrets"
 import { DebugInfo } from "./interop"
 import { createHash } from "crypto"
 
@@ -37,13 +37,11 @@ export interface ScriptBody {
 }
 
 export async function readStorageConnectionString() {
-    const secrets = createSecretClient()
-    const connectionStringSecretName =
-        process.env["DEVS_STORAGE_CONNECTION_STRING_SECRET"] ||
-        "storageAccountConnectionString"
-    const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr =
-        connStrSecret.value || process.env.DEVS_STORAGE_CONNECTION_STRING
+    const connStr = getSecret(
+        "storageAccountConnectionString",
+        "DEVS_STORAGE_CONNECTION_STRING_SECRET",
+        "DEVS_STORAGE_CONNECTION_STRING"
+    )
     return connStr
 }
 

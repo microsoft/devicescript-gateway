@@ -3,7 +3,7 @@ import { serverTelemetry } from "./appinsights"
 import { registerMessageSink } from "../messages"
 import { readStorageConnectionString } from "../storage"
 
-const MESSAGE_TIME_TO_LIVE = 360
+const MESSAGE_TIME_TO_LIVE = 60
 
 export async function setup() {
     const connStr = await readStorageConnectionString()
