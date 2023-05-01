@@ -28,7 +28,7 @@ export async function setup() {
         ingest: async (topic, message, device) => {
             if (!client.connected) return
 
-            const mqTopic = `devs/from/${device.id}/${topic}`
+            const mqTopic = `devs/from/${device.dev.rowKey}/${topic}`
             client.publish(
                 mqTopic,
                 Buffer.from(JSON.stringify(message), "utf-8"),
