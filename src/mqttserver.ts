@@ -4,8 +4,11 @@ import Aedes from "aedes"
 export async function setup(server: FastifyInstance) {
     console.log(`MQTT server at /mqtt`)
     const aedes = new Aedes()
-    server.get("/mqtt", { websocket: true }, async (conn, request) => {
-        console.log("mqtt connection")
-        aedes.handle(conn, request.raw)
+    server.get("/mqtt", (request, reply) => {
+        console.log(`connecting mqtt client`)
+        const client = aedes.handle(request.socket, request.raw)
+        request.raw.on("close", () => {
+            client.close()
+        })
     })
 }
