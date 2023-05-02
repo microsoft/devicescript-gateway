@@ -1,5 +1,5 @@
 #!/usr/bin/env zx
-import 'zx/globals'
+import "zx/globals"
 import dotenv from "dotenv"
 import { expand } from "dotenv-expand"
 import { networkInterfaces } from "os"
@@ -47,6 +47,12 @@ else if (!azure) {
         return null
     })()
     process.env.WEBSITE_HOSTNAME = `${address}:${port}`
+}
+
+if (process.env.DEVS_MQTT_SERVER_DEV) {
+    process.env.DEVS_MQTT_SERVER = `mqtt://${process.env.WEBSITE_HOSTNAME}:1883`
+    $`yarn mqtt`
+    console.log(`started development MQTT server`)
 }
 
 expand(out)
