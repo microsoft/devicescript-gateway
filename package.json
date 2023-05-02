@@ -22,7 +22,8 @@
     "dev": "yarn build && zx dev.mjs --local",
     "dev:azure": "yarn build && zx dev.mjs --azure",
     "logs": "node infra/logs.mjs",
-    "deploy": "node infra/zipdeploy.mjs"
+    "deploy": "node infra/zipdeploy.mjs",
+    "mqtt": "aedes start --host 0.0.0.0 --protos ws"
   },
   "dependencies": {
     "@azure/data-tables": "^13.2.0",
@@ -36,6 +37,7 @@
     "@fastify/static": "^6.5.0",
     "@fastify/websocket": "^7.1.0",
     "aedes": "^0.48.0",
+    "aedes-cli": "^0.6.1",
     "applicationinsights": "^2.5.0",
     "dotenv-expand": "^10.0.0",
     "fastify": "^4.9.2",

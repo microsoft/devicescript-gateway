@@ -1,5 +1,5 @@
 #!/usr/bin/env zx
-import 'zx/globals'
+import "zx/globals"
 import dotenv from "dotenv"
 import { expand } from "dotenv-expand"
 import { networkInterfaces } from "os"
@@ -14,6 +14,7 @@ const {
     CODESPACE_NAME,
     GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN,
     CODESANDBOX_HOST,
+    DEVS_MQTT_SERVER_DEV,
 } = process.env
 // GitHub codespaces
 if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
@@ -47,6 +48,12 @@ else if (!azure) {
         return null
     })()
     process.env.WEBSITE_HOSTNAME = `${address}:${port}`
+}
+
+// start local mqtt server
+if (DEVS_MQTT_SERVER_DEV) {
+    $`yarn mqtt`
+    process.env.DEVS_MQTT_SERVER = `mqtt://${process.env.WEBSITE_HOSTNAME}:1883`
 }
 
 expand(out)
