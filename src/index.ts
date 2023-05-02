@@ -17,6 +17,7 @@ import { setup as eventHubSetup } from "./azure/eventhub"
 import { setup as storageSetup, defaultPartition } from "./storage"
 import { setup as envSetup } from "./env"
 import { setup as storageQueueSetup } from "./azure/storagequeue"
+import { setup as mqttServerSetup } from "./mqttserver"
 import { setup as mqttSetup } from "./mqtt"
 import { initGatewayRoutes } from "./apigateway"
 
@@ -130,6 +131,7 @@ async function main() {
     await storageQueueSetup()
     await mqttSetup()
     await envSetup()
+    await mqttServerSetup(server)
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)

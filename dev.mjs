@@ -50,12 +50,6 @@ else if (!azure) {
     process.env.WEBSITE_HOSTNAME = `${address}:${port}`
 }
 
-// start local mqtt server
-if (DEVS_MQTT_SERVER_DEV) {
-    $`yarn mqtt`
-    process.env.DEVS_MQTT_SERVER = `mqtt://${process.env.WEBSITE_HOSTNAME}:1883`
-}
-
 expand(out)
 
 if (!azure) {
