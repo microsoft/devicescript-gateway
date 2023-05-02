@@ -1,3 +1,11 @@
 {
-    "debug.internalConsoleOptions": "neverOpen"
+    "debug.internalConsoleOptions": "neverOpen",
+    "vsmqtt.brokerProfiles": [
+        {
+            "name": "devicescript gateway",
+            "host": "0.0.0.0",
+            "port": 1883,
+            "clientId": "vsmqtt_client"
+        }
+    ]
 }
