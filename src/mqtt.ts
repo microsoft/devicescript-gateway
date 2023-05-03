@@ -5,6 +5,7 @@ import { getSecret } from "./secrets"
 import { defaultPartition, getDevice } from "./storage"
 import { sendJSON } from "./apidevices"
 import { DeviceId } from "./schema"
+import { randomBytes } from "crypto"
 
 let client: MqttClient
 let serverUrl: string
@@ -30,7 +31,11 @@ export async function setup() {
 
     console.log(`MQTT server: ${serverUrl}`)
     const telemetry = serverTelemetry()
-    client = connect(serverUrl) // create a client
+    client = connect(serverUrl, {
+        clientId: `devicescript_gateway_${randomBytes(16).toString("base64")}`,
+        username: process.env.DEVS_MQTT_USER_NAME,
+        password: process.env.DEVS_MQTT_USER_PASSWORD,
+    }) // create a client
 
     // device to mqtt
     registerMessageSink({

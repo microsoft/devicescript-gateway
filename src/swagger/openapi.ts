@@ -58,10 +58,22 @@ export function generateOpenApiSpec() {
     const gatewaySchema = define(
         "GatewaySchema",
         sObj({
-            mqttServer: sString(
-                "MQTT server",
-                "URL(:PORT) of the MQTT server, if any"
-            ),
+            mqtt: sObj({
+                host: sString(
+                    "MQTT host to listen to",
+                    "URL of the MQTT server"
+                ),
+                path: sString("URL path if any", "Path to the MQTT server"),
+                port: sNumber("mqtt port", "Port to listen to"),
+                username: sString(
+                    "MQTT user",
+                    "username to connect to MQTT server"
+                ),
+                password: sString(
+                    "MQTT user",
+                    "username to connect to MQTT server"
+                ),
+            }),
         })
     )
 

@@ -16,6 +16,12 @@
 	"portsAttributes": {
 		"7071": {
 			"label": "Web App"
+		},
+		"1883": {
+			"label": "MQTT tcp"
+		},
+		"3000": {
+			"label": "MQTT ws"
 		}
 	}
 	// Configure tool-specific properties.
