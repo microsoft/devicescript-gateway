@@ -11,7 +11,7 @@ export async function initGatewayRoutes(server: FastifyInstance) {
             res.mqtt = {
                 hostname: mqttUrl.hostname,
                 path: mqttUrl.pathname,
-                port: mqttUrl.port,
+                port: Number(mqttUrl.port) || 1883,
                 username: process.env.DEVS_MQTT_USER_NAME,
                 password: process.env.DEVS_MQTT_USER_PASSWORD,
             }

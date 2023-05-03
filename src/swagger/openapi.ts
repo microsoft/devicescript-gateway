@@ -64,7 +64,7 @@ export function generateOpenApiSpec() {
                     "URL of the MQTT server"
                 ),
                 path: sString("URL path if any", "Path to the MQTT server"),
-                port: sString("mqtt port", "Port to listen to"),
+                port: sNumber("mqtt port", "Port to listen to"),
                 username: sString(
                     "MQTT user",
                     "username to connect to MQTT server"

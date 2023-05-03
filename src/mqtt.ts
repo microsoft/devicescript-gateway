@@ -43,8 +43,9 @@ export async function setup() {
         topicName: "*",
         ingest: async (topic, message, device) => {
             if (!client.connected) return
-
-            const mqTopic = `${mqttTopicPrefix(device.dev)}/from/${topic}`
+        
+            // don't rewrite global topics
+            const mqTopic = /~\//.test(topic) ? topic.slice(1) : `${mqttTopicPrefix(device.dev)}/from/${topic}`
             client.publish(
                 mqTopic,
                 Buffer.from(JSON.stringify(message), "utf-8"),
