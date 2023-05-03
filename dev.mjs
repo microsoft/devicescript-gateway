@@ -52,7 +52,7 @@ else if (!azure) {
 if (process.env.DEVS_MQTT_SERVER_DEV) {
     process.env.DEVS_MQTT_SERVER = `mqtt://${process.env.WEBSITE_HOSTNAME}:1883`
     process.env.DEVS_MQTT_USER_NAME = process.env.DEVS_LOCAL_USER_NAME
-    process.env.DEVS_MQTT_NAME_PASSWORD = process.env.DEVS_LOCAL_USER_PASSWORD
+    process.env.DEVS_MQTT_USER_PASSWORD = process.env.DEVS_LOCAL_USER_PASSWORD
     //$`yarn aedes --credentials ./local.credentials.json adduser $DEVS_LOCAL_USER_NAME $DEVS_LOCAL_USER_PASSWORD`
     $`yarn aedes start --protos tcp ws --host 0.0.0.0 --broker-id devicescript-gateway --credentials ./local.credentials.json`
     console.log(`started development MQTT server`)
