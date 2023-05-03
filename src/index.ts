@@ -24,7 +24,8 @@ async function initAuth(server: FastifyInstance) {
     console.log(`starting gateway...`)
     const passwordsSecret = await getSecret(
         "passwords",
-        "DEVS_PASSWORDS_SECRET"
+        "DEVS_PASSWORDS_SECRET",
+        "DEVS_PASSWORDS"
     )
     if (!passwordsSecret) throw new Error("passwords is empty")
 

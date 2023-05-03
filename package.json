@@ -22,8 +22,7 @@
     "dev": "yarn build && zx dev.mjs --local",
     "dev:azure": "yarn build && zx dev.mjs --azure",
     "logs": "node infra/logs.mjs",
-    "deploy": "node infra/zipdeploy.mjs",
-    "mqtt": "yarn aedes start --protos tcp ws --host 0.0.0.0 --broker-id devicescript-gateway --verbose"
+    "deploy": "node infra/zipdeploy.mjs"
   },
   "dependencies": {
     "@azure/data-tables": "^13.2.0",

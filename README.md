@@ -12,14 +12,14 @@ The gateway can be run locally (no cloud dependencies), in GitHub CodeSpaces or 
 
 ## Local development
 
-- setup Node.JS 18
+-   setup Node.JS 18
 
 ```bash
 nvm install 18
 nvm use 18
 ```
 
-- download submodules and install dependencies
+-   download submodules and install dependencies
 
 ```bash
 yarn setup
@@ -31,7 +31,7 @@ yarn setup
 yarn dev
 ```
 
-The terminal output will provide the connection string to connect 
+The terminal output will provide the connection string to connect
 to to the gateway from the DeviceScript Visual Studio Code extension.
 
 -   **in GitHub Codespaces**, change the visibility of port `7071` to `Public`
@@ -42,13 +42,14 @@ You can also access the Swagger sandbox locally:
 -   Click Authorize
 -   Use user/password `devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==`
 
-### CodeSandbox.io
+### Github Codespaces, CodeSandbox.io
 
-Running the gateway in Codesandbox.io will give you an addressable web server that will be reachable by devices which the codespace
+Running the gateway in Codespaces/Codesandbox.io will give you an addressable web server that will be reachable by devices which the codespace
 is active. It is an easy to get a development gateway available on the web without having to deal with network issues.
 The tools will automatically detect Codesandbox.io and self configure.
 
-- To open this repo in Codesandbox.io, https://codesandbox.io/p/github/microsoft/devicescript-gateway/main
+-   Clone this repository or the fork into a GitHub Codespace to get started
+-   To open this repo in Codesandbox.io, https://codesandbox.io/p/github/microsoft/devicescript-gateway/main
 
 ## Azure services
 
