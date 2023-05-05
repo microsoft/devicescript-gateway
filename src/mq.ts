@@ -12,10 +12,11 @@ export function setErrorHandler(cb: (topic: string, err: Error) => void) {
     errorHandler = cb
 }
 
-export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
+export async function sub<T>(topic: string, f: (payload: T) => Promise<void>) {
     return new Promise<() => void>((resolve, reject) => {
         function cb(msg: Message, done: () => void) {
-            f(msg as any).then(
+            const { payload } = msg
+            f(payload).then(
                 _ => done(),
                 err => {
                     errorHandler(topic, err)
@@ -30,7 +31,7 @@ export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
     })
 }
 
-export async function pub(topic: string, payload: any) {
+export async function pub<T>(topic: string, payload: T) {
     const msg: Message = { topic, payload }
     return new Promise<void>((resolve, reject) => {
         emitter.emit(msg, err => (err ? reject(err) : resolve()))
