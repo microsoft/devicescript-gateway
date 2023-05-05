@@ -18,6 +18,7 @@ import { setup as storageSetup, defaultPartition } from "./storage"
 import { setup as envSetup } from "./env"
 import { setup as storageQueueSetup } from "./azure/storagequeue"
 import { setup as mqttSetup } from "./mqtt"
+import { setup as mqttServerSetup } from "./mqttserver"
 import { initGatewayRoutes } from "./apigateway"
 
 async function initAuth(server: FastifyInstance) {
@@ -134,6 +135,7 @@ async function main() {
     await initAuth(server)
     await wsskInit(server)
     await fwdSockInit(server)
+    await mqttServerSetup(server)
 
     server.get("/", async (req, resp) => {
         resp.type("text/html")
