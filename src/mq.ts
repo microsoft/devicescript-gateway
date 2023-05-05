@@ -1,4 +1,3 @@
-import { assert } from "console"
 import mqemitter, { Message } from "mqemitter"
 
 export const emitter = mqemitter({
@@ -13,10 +12,11 @@ export function setErrorHandler(cb: (topic: string, err: Error) => void) {
     errorHandler = cb
 }
 
-export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
+export async function sub<T>(topic: string, f: (payload: T) => Promise<void>) {
     return new Promise<() => void>((resolve, reject) => {
         function cb(msg: Message, done: () => void) {
-            f(msg as any).then(
+            const { payload } = msg
+            f(payload).then(
                 _ => done(),
                 err => {
                     errorHandler(topic, err)
@@ -31,10 +31,8 @@ export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
     })
 }
 
-export async function pub(topic: string, payload: any) {
-    // console.log("PUB", topic, payload)
-    assert(payload.topic === undefined, "payload cannot have topic")
-    const msg = Object.assign({ topic }, payload)
+export async function pub<T>(topic: string, payload: T) {
+    const msg: Message = { topic, payload }
     return new Promise<void>((resolve, reject) => {
         emitter.emit(msg, err => (err ? reject(err) : resolve()))
     })
@@ -50,12 +48,13 @@ export async function until<T>(
             resolve = null
             emitter.removeListener(topic, cb)
         }
-        function cb(msg: any, done: () => void) {
+        function cb(msg: Message, done: () => void) {
+            const { topic, payload } = msg
             try {
-                if (cond(msg) && resolve) {
+                if (cond(payload) && resolve) {
                     const r = resolve
                     finish()
-                    r(msg)
+                    r(payload)
                 }
             } catch (e) {
                 if (resolve) {
