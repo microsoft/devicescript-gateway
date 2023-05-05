@@ -9,11 +9,9 @@ export function selfUrl() {
     const hostname = process.env.WEBSITE_HOSTNAME
     if (!hostname) throw new Error("WEBSITE_HOSTNAME not configured")
     const protocol =
-        process.env.WEBSITE_PROTOCOL || /^(127\.|0\.|localhost)/i.test(hostname)
-            ? "http"
-            : "https"
+        process.env.WEBSITE_PROTOCOL ||
+        (/^(127\.|0\.|localhost)/i.test(hostname) ? "http" : "https")
     const url = `${protocol}://${hostname}`
-    console.log({ url })
     return url
 }
 
@@ -67,7 +65,7 @@ export function throwStatus(code: number, msg = ""): never {
     let info = "HTTP " + code
     if (msg) info += ": " + msg
     const e = new Error(info)
-        ; (e as any).statusCode = code
+    ;(e as any).statusCode = code
     throw e
 }
 
@@ -87,7 +85,7 @@ export function delay(ms: number) {
 export function runInBg(log: FastifyBaseLogger, lbl: string, p: Promise<any>) {
     // log.debug(`bg ${lbl}`)
     p.then(
-        _ => { },
+        _ => {},
         err => {
             log.error(`error in ${lbl}: ${err.message} ${err.stack}`, { err })
         }

@@ -31,7 +31,7 @@ import {
     WsskStreamingType,
     parseStackFrame,
     IMAGE_MIN_LENGTH,
-    checkMagic
+    checkMagic,
 } from "./interop"
 import { ingestLogs, ingestMessage } from "./messages"
 import {
@@ -119,7 +119,7 @@ export class ConnectedDevice {
     private deployBuffer: Buffer
     private deployHash: Buffer
     private deployPtr = 0
-    private deployCmd: WsskCmd = 0
+    private deployCmd: WsskCmd = <WsskCmd>0
     streamingMask = WsskStreamingType.DefaultMask
 
     private lastDbgInfo: DebugInfo
@@ -194,7 +194,7 @@ export class ConnectedDevice {
 
     private deployFail() {
         this.trackEvent("deploy.fail")
-        this.deployCmd = 0
+        this.deployCmd = <WsskCmd>0
         this.deployNumFail++
         this.deployTimeout =
             Date.now() + (2 + Math.min(this.deployNumFail, 20)) * 10 * 1000
@@ -239,7 +239,7 @@ export class ConnectedDevice {
                                 )}`
                             )
                         }
-                        this.deployCmd = 0
+                        this.deployCmd = <WsskCmd>0
                         this.deployNumFail = 0
                         this.deployTimeout = 0
                     } else {
@@ -382,10 +382,15 @@ export class ConnectedDevice {
             try {
                 const body = await getScriptBody(d.scriptId, d.scriptVersion)
                 const tmp = Buffer.from(body.program.binary.hex, "hex")
-                if (tmp.length < IMAGE_MIN_LENGTH) this.warn(`compiled program too short`)
+                if (tmp.length < IMAGE_MIN_LENGTH)
+                    this.warn(`compiled program too short`)
                 else {
                     if (!checkMagic(tmp)) {
-                        this.warn(`compiled program bad magic ${tmp.slice(0, 8).toString("hex")}`)
+                        this.warn(
+                            `compiled program bad magic ${tmp
+                                .slice(0, 8)
+                                .toString("hex")}`
+                        )
                     } else this.setDeploy(tmp)
                 }
             } catch (e: any) {
@@ -503,10 +508,11 @@ export class ConnectedDevice {
                         this.notify({ type: "logs", logs: lines }),
                     ])
                 }
+                break
             }
             default:
                 if (!(await this.deployStep(cmd, payload)))
-                    this.warn(`unknown cmd ${cmd}`)
+                    this.warn(`unknown cmd ${cmd.toString(16)}`)
         }
     }
 
