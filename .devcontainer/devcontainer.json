@@ -17,6 +17,14 @@
 		"7071": {
 			"label": "Web App"
 		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"esbenp.prettier-vscode",
+				"rpdswtk.vsmqtt"
+			]
+		}
 	}
 	// Configure tool-specific properties.
 	// "customizations": {},
