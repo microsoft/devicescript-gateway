@@ -49,8 +49,7 @@ export function subFromDevice(
 export function pubToDevice(id: DeviceId, msg: ToDeviceMessage) {
     msg.deviceId = id.rowKey
     msg.partitionId = id.partitionKey
-    const pubTopic = "to-dev/" + fullDeviceId(id)
-    return mq.pub(pubTopic, msg)
+    return mq.pub("to-dev/" + fullDeviceId(id), msg)
 }
 
 export function pubFromDevice(id: DeviceId, msg: FromDeviceMessage) {

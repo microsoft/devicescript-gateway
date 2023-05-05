@@ -33,7 +33,7 @@ export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
 
 export async function pub(topic: string, payload: any) {
     // console.log("PUB", topic, payload)
-    assert(payload.topic === undefined)
+    assert(payload.topic === undefined, "payload cannot have topic")
     const msg = Object.assign({ topic }, payload)
     return new Promise<void>((resolve, reject) => {
         emitter.emit(msg, err => (err ? reject(err) : resolve()))
