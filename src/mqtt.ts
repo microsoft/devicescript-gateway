@@ -53,7 +53,7 @@ export async function setup() {
             if (!client.connected) return
 
             // don't rewrite global topics
-            const mqTopic = /~\//.test(topic)
+            const mqTopic = /^\//.test(topic)
                 ? topic.slice(1)
                 : `${mqttTopicPrefix(device.dev)}/from/${topic}`
             client.publish(
@@ -70,7 +70,12 @@ export async function setup() {
         },
     })
 
-    // dispatch messages to devices
+    client.on("error", err => {
+        console.error(err)
+        telemetry?.trackException({
+            exception: err
+        })
+    })
     client.on("connect", () => {
         // devs/deviceid/json/topic
         client.subscribe("devs/+/to/#", err => {

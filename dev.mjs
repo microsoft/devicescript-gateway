@@ -20,7 +20,13 @@ if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
     process.env.WEBSITE_HOSTNAME = `${CODESPACE_NAME}-${port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
     process.env.WEBSITE_PROTOCOL = "https"
     console.warn(
-        `- make sure to change the visibility of port '${port}' to 'Public'`
+        `------------------------------------------------------------------`
+    )
+    console.warn(
+        `- MAKE SURE TO CHANGE THE VISIBILITY OF PORT '${port}' TO 'Public'`
+    )
+    console.warn(
+        `------------------------------------------------------------------`
     )
 }
 // Codesandbox
