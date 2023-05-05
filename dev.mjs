@@ -19,7 +19,6 @@ const {
 if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
     process.env.WEBSITE_HOSTNAME = `${CODESPACE_NAME}-${port}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
     process.env.WEBSITE_PROTOCOL = "https"
-    console.log(`GitHub Codespace detected...`)
     console.warn(
         `- make sure to change the visibility of port '${port}' to 'Public'`
     )
@@ -28,7 +27,6 @@ if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
 else if (CODESANDBOX_HOST) {
     process.env.WEBSITE_HOSTNAME = CODESANDBOX_HOST
     process.env.WEBSITE_PROTOCOL = "https"
-    console.log(`Codesandbox.io detected...`)
 }
 // local dev
 else if (!azure) {
@@ -54,14 +52,11 @@ expand(out)
 if (!azure) {
     $`yarn azurite`
     console.log(
-        `- Visual Studio Code connection string: 
+        `- Visual Studio Code Extension connection string: 
         
 ${process.env.DEVS_CONNECTION_STRING}
 
 `
-    )
-    console.log(
-        `- More documentation at https://microsoft.github.io/devicescript/developer/cloud/gateway`
     )
     console.log(``)
 }

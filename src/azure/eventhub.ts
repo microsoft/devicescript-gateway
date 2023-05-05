@@ -1,15 +1,19 @@
 import { EventHubProducerClient } from "@azure/event-hubs"
 import { serverTelemetry } from "./appinsights"
 import { registerMessageSink } from "../messages"
-import { createSecretClient } from "../secrets"
+import { getSecret } from "../secrets"
+
+/**
+ * Event Hub connection string
+ */
+export const DEVS_EVENT_HUB_CONNECTION_STRING =
+    "DEVS_EVENT_HUB_CONNECTION_STRING"
 
 export async function setup() {
-    const secrets = createSecretClient()
-    const connectionStringSecretName =
-        process.env["DEVS_EVENT_HUB_CONNECTION_STRING_SECRET"] ||
-        "eventHubAccountConnectionString"
-    const connStrSecret = await secrets.getSecret(connectionStringSecretName)
-    const connStr = connStrSecret.value
+    const connStr = await getSecret(
+        "eventHubAccountConnectionString",
+        DEVS_EVENT_HUB_CONNECTION_STRING
+    )
     if (!connStr) {
         console.log(
             "no Azure EventHub connection string secret, skipping registration"

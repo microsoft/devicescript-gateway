@@ -39,7 +39,6 @@ export interface ScriptBody {
 export async function readStorageConnectionString() {
     const connStr = getSecret(
         "storageAccountConnectionString",
-        "DEVS_STORAGE_CONNECTION_STRING_SECRET",
         "DEVS_STORAGE_CONNECTION_STRING"
     )
     return connStr

@@ -1,11 +1,21 @@
 import { MqttClient, connect } from "mqtt" // import connect from mqtt
 import { serverTelemetry } from "./azure/appinsights"
 import { registerMessageSink } from "./messages"
-import { getSecret } from "./secrets"
+import { getUserSecret } from "./secrets"
 import { defaultPartition, getDevice } from "./storage"
 import { sendJSON } from "./apidevices"
 import { DeviceId } from "./schema"
 import { randomBytes } from "crypto"
+
+/**
+ * MQTT server url, including protocol and port
+ */
+export const DEVS_MQTT_URL = "DEVS_MQTT_URL"
+
+/**
+ * MQTT username password key value pair separated by ':'
+ */
+export const DEVS_MQTT_USER = "DEVS_MQTT_USER"
 
 let client: MqttClient
 let serverUrl: string
@@ -19,22 +29,20 @@ export function mqttServer() {
 }
 
 export async function setup() {
-    serverUrl = await getSecret(
-        "mqttConnectionString",
-        "DEVS_MQTT_SERVER_SECRET",
-        "DEVS_MQTT_SERVER"
-    )
+    serverUrl = process.env[DEVS_MQTT_URL]
     if (!serverUrl) {
         console.log("no MQTT connection string secret, skipping registration")
         return
     }
 
     console.log(`MQTT server: ${serverUrl}`)
+    const [username, password] = await getUserSecret("mqttUser", DEVS_MQTT_USER)
+
     const telemetry = serverTelemetry()
     client = connect(serverUrl, {
         clientId: `devicescript_gateway_${randomBytes(16).toString("base64")}`,
-        username: process.env.DEVS_MQTT_USER_NAME,
-        password: process.env.DEVS_MQTT_USER_PASSWORD,
+        username,
+        password,
     }) // create a client
 
     // device to mqtt
@@ -43,9 +51,11 @@ export async function setup() {
         topicName: "*",
         ingest: async (topic, message, device) => {
             if (!client.connected) return
-        
+
             // don't rewrite global topics
-            const mqTopic = /~\//.test(topic) ? topic.slice(1) : `${mqttTopicPrefix(device.dev)}/from/${topic}`
+            const mqTopic = /~\//.test(topic)
+                ? topic.slice(1)
+                : `${mqttTopicPrefix(device.dev)}/from/${topic}`
             client.publish(
                 mqTopic,
                 Buffer.from(JSON.stringify(message), "utf-8"),

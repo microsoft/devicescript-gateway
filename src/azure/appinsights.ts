@@ -6,10 +6,16 @@ import {
 import { registerLogSink, registerMessageSink } from "../messages"
 import { Contracts } from "applicationinsights"
 
+/**
+ * Application Insights client connection string
+ */
+export const APPLICATIONINSIGHTS_CONNECTION_STRING =
+    "APPLICATIONINSIGHTS_CONNECTION_STRING"
+
 // telemetry from devices
 let _devsTelemetry: appInsights.TelemetryClient
 export async function setup() {
-    const connString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
+    const connString = process.env[APPLICATIONINSIGHTS_CONNECTION_STRING]
     if (!connString) {
         console.log(`no env APPLICATIONINSIGHTS_CONNECTION_STRING, skipping`)
         return

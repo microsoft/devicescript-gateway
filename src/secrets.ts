@@ -20,9 +20,9 @@ export function createSecretClient(): Secrets {
 
 export async function getSecret(
     defaultName: string,
-    secretNameEnvironmentName: string,
-    environmentName?: string
+    environmentName: string
 ) {
+    const secretNameEnvironmentName = environmentName + "_SECRET"
     const secrets = createSecretClient()
     const connectionStringSecretName =
         process.env[secretNameEnvironmentName] || defaultName
@@ -31,4 +31,22 @@ export async function getSecret(
         connStrSecret.value ||
         (environmentName ? process.env[environmentName] : undefined)
     return connStr
+}
+
+function splitUser(line: string) {
+    if (!line) return []
+    const i = line.indexOf(":")
+    if (i < 0) return []
+    return [line.slice(0, i).trim(), line.slice(i + 1)]
+}
+
+export async function getUserSecret(
+    defaultName: string,
+    environmentName: string
+) {
+    const value = await getSecret(
+        defaultName,
+        environmentName
+    )
+    return splitUser(value)
 }
