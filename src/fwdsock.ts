@@ -115,6 +115,7 @@ export async function fwdSockInitRoute(
             }
             enableFwd()
             unsub = await subFromDevice(dev, async (msg: FromDeviceMessage) => {
+                if (conn.socket.readyState !== conn.socket.OPEN) return
                 if (forwarding && msg.type === "frame")
                     conn.socket.send(Buffer.from(msg.payload64, "base64"))
                 if (logging && msg.type !== "frame") {
