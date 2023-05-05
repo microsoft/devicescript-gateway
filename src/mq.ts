@@ -1,4 +1,3 @@
-import { assert } from "console"
 import mqemitter, { Message } from "mqemitter"
 
 export const emitter = mqemitter({
@@ -32,9 +31,7 @@ export async function sub(topic: string, f: (msg: Message) => Promise<void>) {
 }
 
 export async function pub(topic: string, payload: any) {
-    // console.log("PUB", topic, payload)
-    assert(payload.topic === undefined, "payload cannot have topic")
-    const msg = Object.assign({ topic }, payload)
+    const msg: Message = { topic, payload }
     return new Promise<void>((resolve, reject) => {
         emitter.emit(msg, err => (err ? reject(err) : resolve()))
     })
@@ -50,12 +47,13 @@ export async function until<T>(
             resolve = null
             emitter.removeListener(topic, cb)
         }
-        function cb(msg: any, done: () => void) {
+        function cb(msg: Message, done: () => void) {
+            const { topic, payload } = msg
             try {
-                if (cond(msg) && resolve) {
+                if (cond(payload) && resolve) {
                     const r = resolve
                     finish()
-                    r(msg)
+                    r(payload)
                 }
             } catch (e) {
                 if (resolve) {
