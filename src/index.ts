@@ -151,7 +151,7 @@ async function main() {
         <h1>Development DeviceScript Gateway</h1>
         <ul>
             <li><a href='./swagger/'>OpenAPI dashboard (swagger)</a>.</li>
-            <li><a href='https://microsoft.github.io/devicescript/developer/cloud/gateway'>Documentation</a></li>
+            <li><a href='https://microsoft.github.io/devicescript/developer/development-gateway/gateway'>Documentation</a></li>
             ${
                 process.env.DEVS_MQTT_SERVER
                     ? `<li>MQTT server: ${process.env.DEVS_MQTT_SERVER}</li>`
